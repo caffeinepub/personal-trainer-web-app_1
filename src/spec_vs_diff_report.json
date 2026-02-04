@@ -1,0 +1,39 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-04T12:37:05.568Z",
+  "summary": "Diff adds per-set target weights via a new `setWeights` array on exercises across backend types and multiple frontend components/utilities. However, it also introduces a migration module outside `backend/main.mo` and changes workout logging to per-set actual weights, which conflicts with stated constraints and non-goals. Evidence for updating backend canister methods (`createWorkout`, `getWorkoutsForClient`) is not visible in the provided truncated diff.",
+  "missing_requirements": [],
+  "hallucinated_features": [
+    {
+      "description": "Introduced a separate backend migration module and wired it into the canister, despite the constraint to keep all logic in `backend/main.mo` and keep the backend as a single-actor Motoko canister without additional backend modules.",
+      "reason": "BuildRequest constraints: \"keep all logic in backend/main.mo\"; diff adds `backend/migration.mo` and imports/uses it from `backend/main.mo`.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Changed the workout logging model to collect per-set actual weights (`actualSetWeights`) rather than keeping a single `actualWeight` input per exercise.",
+      "reason": "Non-goal explicitly says: \"Do not change the workout logging model to collect per-set actual weights; keep the current single actualWeight input per exercise.\" Diff changes `ExerciseLog` to include `actualSetWeights` and frontend builds arrays of per-set weights when saving.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.62,
+  "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx",
+    "frontend/src/components/client/WorkoutLogsSection.tsx",
+    "frontend/src/components/trainer/ClientWorkoutsList.tsx",
+    "frontend/src/components/trainer/ExercisePerformanceProgression.tsx",
+    "frontend/src/components/trainer/WorkoutBuilder.tsx",
+    "frontend/src/pages/ClientDashboardPage.tsx",
+    "frontend/src/utils/workoutSetWeights.ts",
+    "project_state.json"
+  ]
+}

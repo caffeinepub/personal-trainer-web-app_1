@@ -1,0 +1,93 @@
+{
+  "kind": "build_request",
+  "title": "Add per-set target weight (kg) to trainer workout builder and client assigned workout view",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-13",
+      "text": "Extend the workout data model to support a target weight value for each set of an exercise (per-set target weight in kg), and expose it through the existing workout creation and workout retrieval canister methods so the frontend can create and display workouts with per-set target weights.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Aggiungere **solo il peso per ogni serie** (kg)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A workout exercise can store a list of target weights with one entry per set.",
+        "createWorkout accepts the per-set target weight data and persists it with the workout.",
+        "getWorkoutsForClient returns workouts including per-set target weights for each exercise.",
+        "Existing workouts without per-set target weights continue to load without trapping (backward compatibility)."
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Update the trainer Workout Builder UI to let the trainer input a target weight (kg) for each set of each exercise, validate the inputs, and submit the per-set target weights when creating a workout.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "procediamo con l’aggiunta del **peso per ogni serie**"
+        ]
+      },
+      "acceptanceCriteria": [
+        "For each exercise, after the trainer sets the number of sets, the UI renders weight inputs for Set 1..Set N.",
+        "Validation blocks submission if any per-set weight is missing or invalid (must be a non-negative number).",
+        "On submit, the payload sent through the existing createWorkout flow includes the per-set target weights and the workout is created successfully."
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "Update the client assigned workout card UI to display the per-set target weight values for each exercise in a clear, readable format while keeping the existing workout logging flow unchanged.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "li renderò visibili nel **workout assegnato al cliente**"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each assigned exercise shows the set-by-set target weights (e.g., 'Set 1: 50kg, Set 2: 52.5kg, ...') in addition to sets/reps targets.",
+        "Client can still enter actual sets/reps/weight and save the workout log successfully without any new required fields.",
+        "If an older workout has no per-set weights, the UI falls back to the existing single target weight display without errors."
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "text": "Update trainer-side workout viewing components (workout list/detail rendering) to display per-set target weights for each exercise, with a sensible fallback for older workouts that do not have per-set weights.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "peso per ogni serie"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Trainer workout list/detail rendering shows per-set target weights when present.",
+        "Older workouts without per-set weights render without crashes and display the legacy single target weight."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single-actor Motoko canister; keep all logic in backend/main.mo.",
+    "Do not edit any frontend files under frontend/src/components/ui or any paths listed as immutable in SYSTEM_CONTEXT.",
+    "Use English for any user-facing text introduced or modified in the UI."
+  ],
+  "nonGoals": [
+    "Do not implement per-set rest time (seconds) in this change.",
+    "Do not change the workout logging model to collect per-set actual weights; keep the current single actualWeight input per exercise.",
+    "Do not address unrelated known issues (trainer password security, PT code randomness, workout ID uniqueness, nested QueryClientProviders) as part of this request."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

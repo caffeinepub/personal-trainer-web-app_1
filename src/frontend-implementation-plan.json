@@ -1,0 +1,59 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Per-set target weight inputs and display in trainer builder and workout views",
+  "requirements": [
+    {
+      "id": "REQ-14",
+      "summary": "Let trainers enter and validate a target weight (kg) for each set per exercise and submit it through the existing create workout flow.",
+      "acceptanceCriteria": [
+        "For each exercise, after the trainer sets the number of sets, the UI renders weight inputs for Set 1..Set N.",
+        "Validation blocks submission if any per-set weight is missing or invalid (must be a non-negative number).",
+        "On submit, the payload sent through the existing createWorkout flow includes the per-set target weights and the workout is created successfully."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/workoutSetWeights.ts",
+          "operation": "create",
+          "description": "Add shared helpers to (1) normalize per-set target weights to match the selected set count, (2) validate per-set target weights as non-negative numbers, and (3) format per-set target weights for display. This will be reused by trainer and client workout rendering."
+        },
+        {
+          "path": "frontend/src/components/trainer/WorkoutBuilder.tsx",
+          "operation": "modify",
+          "description": "Update the exercise form state to store per-set target weights (kg) and render Set 1..Set N weight inputs after the trainer provides the set count. Add validation to block submission when any per-set weight is missing/invalid (non-negative number). Update the workout creation payload to include per-set target weights via the existing createWorkout flow, keeping other fields unchanged. Use shadcn-ui form components (Input/Label/Card/Button) to render the added inputs; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "summary": "Display per-set target weights on the client assigned workout card while keeping the existing logging flow unchanged and providing a fallback for older workouts.",
+      "acceptanceCriteria": [
+        "Each assigned exercise shows the set-by-set target weights (e.g., 'Set 1: 50kg, Set 2: 52.5kg, ...') in addition to sets/reps targets.",
+        "Client can still enter actual sets/reps/weight and save the workout log successfully without any new required fields.",
+        "If an older workout has no per-set weights, the UI falls back to the existing single target weight display without errors."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx",
+          "operation": "modify",
+          "description": "Update target display for each exercise to show set-by-set target weights when present (using shared formatting helpers), while preserving the current actual logging inputs and validation unchanged. Add a safe fallback when per-set weights are missing/empty to render the legacy single target weight display (without throwing). Use existing shadcn-ui Card/Input/Label/Textarea/Alert components for any new layout blocks; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "summary": "Show per-set target weights in trainer-side workout list/detail rendering with a sensible fallback for older workouts.",
+      "acceptanceCriteria": [
+        "Trainer workout list/detail rendering shows per-set target weights when present.",
+        "Older workouts without per-set weights render without crashes and display the legacy single target weight."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/trainer/ClientWorkoutsList.tsx",
+          "operation": "modify",
+          "description": "Update trainer workout rendering to display per-set target weights for each exercise when available (e.g., a concise 'Set 1: … kg, Set 2: … kg' line), and fall back to the legacy single target weight display when per-set weights are missing/empty. Reuse shared helpers for consistent formatting and backward-compatible detection. Use existing shadcn-ui Card layout patterns; verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-update-the-trainer-workout-builder-ui-to-let-the-trainer-input-a-target-weight-kg-for-each-set-of-each-exercise-validate-the-inputs-and-submit-the-per-set-target-weights-when-creating-a-workout",
+      "featureTitle": "Update the trainer Workout Builder UI to let the trainer input a target weight (kg) for each set of each exercise, validate the inputs, and submit the per-set target weights when creating a workout.",
+      "files": [
+        "frontend/src/components/trainer/WorkoutBuilder.tsx",
+        "frontend/src/utils/workoutSetWeights.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-14"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-client-assigned-workout-card-ui-to-display-the-per-set-target-weight-values-for-each-exercise-in-a-clear-readable-format-while-keeping-the-existing-workout-logging-flow-unchanged",
+      "featureTitle": "Update the client assigned workout card UI to display the per-set target weight values for each exercise in a clear, readable format while keeping the existing workout logging flow unchanged.",
+      "files": [
+        "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-15"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-trainer-side-workout-viewing-components-workout-list-detail-rendering-to-display-per-set-target-weights-for-each-exercise-with-a-sensible-fallback-for-older-workouts-that-do-not-have-per-set-weights",
+      "featureTitle": "Update trainer-side workout viewing components (workout list/detail rendering) to display per-set target weights for each exercise, with a sensible fallback for older workouts that do not have per-set weights.",
+      "files": [
+        "frontend/src/components/trainer/ClientWorkoutsList.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-16"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

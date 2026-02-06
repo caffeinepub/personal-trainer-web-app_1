@@ -1,39 +1,49 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-04T12:37:05.568Z",
-  "summary": "Diff adds per-set target weights via a new `setWeights` array on exercises across backend types and multiple frontend components/utilities. However, it also introduces a migration module outside `backend/main.mo` and changes workout logging to per-set actual weights, which conflicts with stated constraints and non-goals. Evidence for updating backend canister methods (`createWorkout`, `getWorkoutsForClient`) is not visible in the provided truncated diff.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-06T10:01:09.007Z",
+  "summary": "Diff adds frontend-side hardening for trainer login (actor readiness checks, password trimming, and error categorization with English copy) and introduces a trainer-auth error mapping utility. Backend diff snippet shows additional unrelated data fields/types (e.g., restTime) and retains the trainer password as \"12345\", but the authenticateTrainer implementation is not visible due to truncation.",
+  "missing_requirements": [
     {
-      "description": "Introduced a separate backend migration module and wired it into the canister, despite the constraint to keep all logic in `backend/main.mo` and keep the backend as a single-actor Motoko canister without additional backend modules.",
-      "reason": "BuildRequest constraints: \"keep all logic in backend/main.mo\"; diff adds `backend/migration.mo` and imports/uses it from `backend/main.mo`.",
+      "id": "REQ-2",
+      "requirement": "Disable (or block) trainer login submission until the backend actor is available/initialized, with deterministic initialization so authentication is not intermittently rejected due to actor readiness.",
+      "reason": "The diff shows logic computing disabled state (isFormDisabled/isInitializing) and blocking submit when actor is null, but the truncated LoginPage.tsx excerpt does not show that the submit button/input is actually disabled based on this state. Without evidence of disabled props being applied, the AC about the submit button being disabled (or otherwise blocked) until actor readiness is only partially evidenced.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
+        "frontend/src/pages/LoginPage.tsx (truncated)"
       ]
     },
     {
-      "description": "Changed the workout logging model to collect per-set actual weights (`actualSetWeights`) rather than keeping a single `actualWeight` input per exercise.",
-      "reason": "Non-goal explicitly says: \"Do not change the workout logging model to collect per-set actual weights; keep the current single actualWeight input per exercise.\" Diff changes `ExerciseLog` to include `actualSetWeights` and frontend builds arrays of per-set weights when saving.",
+      "id": "REQ-1",
+      "requirement": "Fix trainer login so entering access code \"12345\" reliably authenticates and navigates into the trainer dashboard without showing the generic error when the code is correct.",
+      "reason": "Frontend now trims the password and calls actor.authenticateTrainer, but the backend-side behavior for authenticateTrainer (including any prior bug causing intermittent rejection) is not visible in the provided backend/main.mo snippet due to truncation, so the root-cause fix cannot be confirmed from the diff summary alone.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx"
+        "backend/main.mo (truncated)",
+        "frontend/src/pages/LoginPage.tsx (truncated)"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Backend data-model changes adding/using restTime fields and additional workout/exercise log schema elements unrelated to the trainer access-code login fix.",
+      "reason": "The BuildRequest is focused on trainer login reliability, actor readiness, error handling, and English copy for the trainer login page. The backend diff snippet shows new/extended types (e.g., Exercise.restTime, ExerciseLog.restTime) that are not requested by any REQ-1..REQ-4.",
+      "evidence": [
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "description": "Documentation/summary claims of new features like a trainer dashboard personal settings tab for modifying access code, new workout creation/edit flows, and global theme changes.",
+      "reason": "These items are not requested (and some are explicitly non-goals, e.g., changing the trainer access code away from \"12345\" or adding a password-change flow). The only concrete evidence provided is that frontend-file-summaries.txt was modified to describe such features.",
+      "evidence": [
+        "frontend-file-summaries.txt (truncated)"
       ]
     }
   ],
   "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx",
-    "frontend/src/components/client/WorkoutLogsSection.tsx",
-    "frontend/src/components/trainer/ClientWorkoutsList.tsx",
-    "frontend/src/components/trainer/ExercisePerformanceProgression.tsx",
-    "frontend/src/components/trainer/WorkoutBuilder.tsx",
-    "frontend/src/pages/ClientDashboardPage.tsx",
-    "frontend/src/utils/workoutSetWeights.ts",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/utils/trainerAuthErrors.ts",
     "project_state.json"
   ]
 }

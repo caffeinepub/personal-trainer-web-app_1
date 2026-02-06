@@ -1,57 +1,78 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Per-set target weight inputs and display in trainer builder and workout views",
+  "title": "Stabilize trainer access-code login (actor readiness + error mapping + English copy)",
   "requirements": [
     {
-      "id": "REQ-14",
-      "summary": "Let trainers enter and validate a target weight (kg) for each set per exercise and submit it through the existing create workout flow.",
+      "id": "REQ-1",
+      "summary": "Make trainer login with access code \"12345\" reliably succeed and navigate into the trainer dashboard, while incorrect codes show an error.",
       "acceptanceCriteria": [
-        "For each exercise, after the trainer sets the number of sets, the UI renders weight inputs for Set 1..Set N.",
-        "Validation blocks submission if any per-set weight is missing or invalid (must be a non-negative number).",
-        "On submit, the payload sent through the existing createWorkout flow includes the per-set target weights and the workout is created successfully."
+        "From the initial trainer login screen, submitting access code \"12345\" results in successful login and the trainer dashboard view is shown.",
+        "The error message \"Unable to authenticate. Please verify your access code.\" is not shown when the access code is correct.",
+        "Submitting an incorrect access code does not log in and shows a clear error state."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/workoutSetWeights.ts",
-          "operation": "create",
-          "description": "Add shared helpers to (1) normalize per-set target weights to match the selected set count, (2) validate per-set target weights as non-negative numbers, and (3) format per-set target weights for display. This will be reused by trainer and client workout rendering."
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Harden the trainer access-code submission flow to prevent false negatives (e.g., ensure the normalized access code is used, reset stale error state on new attempts, and only trigger the authentication mutation when prerequisites are met). Continue using shadcn-ui form components already present (Button/Input/Label/Card/Alert) for consistent UI; verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/trainer/WorkoutBuilder.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Update the exercise form state to store per-set target weights (kg) and render Set 1..Set N weight inputs after the trainer provides the set count. Add validation to block submission when any per-set weight is missing/invalid (non-negative number). Update the workout creation payload to include per-set target weights via the existing createWorkout flow, keeping other fields unchanged. Use shadcn-ui form components (Input/Label/Card/Button) to render the added inputs; verify the component's usage instructions before implementing."
+          "description": "Verify and, if needed, adjust the trainer-login success wiring so that a successful authentication deterministically transitions into the trainer dashboard (Personal area) without requiring a refresh (session persistence + view switch)."
         }
       ]
     },
     {
-      "id": "REQ-15",
-      "summary": "Display per-set target weights on the client assigned workout card while keeping the existing logging flow unchanged and providing a fallback for older workouts.",
+      "id": "REQ-2",
+      "summary": "Block trainer authentication until the backend actor is fully initialized and provide a deterministic actor-ready UX to avoid intermittent rejections.",
       "acceptanceCriteria": [
-        "Each assigned exercise shows the set-by-set target weights (e.g., 'Set 1: 50kg, Set 2: 52.5kg, ...') in addition to sets/reps targets.",
-        "Client can still enter actual sets/reps/weight and save the workout log successfully without any new required fields.",
-        "If an older workout has no per-set weights, the UI falls back to the existing single target weight display without errors."
+        "The trainer login submit button is disabled (or submission is blocked) until the backend actor is available and initialization steps required for authenticated flows are completed.",
+        "If the backend actor is null/unavailable, the UI shows a specific actionable error (not the generic \"Unable to authenticate\" message).",
+        "Repeated attempts with the correct code in the same session succeed consistently (no intermittent failures)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx",
+          "path": "frontend/src/pages/LoginPage.tsx",
           "operation": "modify",
-          "description": "Update target display for each exercise to show set-by-set target weights when present (using shared formatting helpers), while preserving the current actual logging inputs and validation unchanged. Add a safe fallback when per-set weights are missing/empty to render the legacy single target weight display (without throwing). Use existing shadcn-ui Card/Input/Label/Textarea/Alert components for any new layout blocks; verify the component's usage instructions before implementing."
+          "description": "Use useActor() readiness state (actor + isFetching) to implement a deterministic initialization path: disable the submit button and block form submission while the actor is still being fetched/initialized; show an explicit 'connecting/initializing service' state while loading; and show a dedicated 'service unavailable / actor not available' error when actor remains null after initialization. Keep error messaging separate from incorrect-code errors. Continue using shadcn-ui components for loading/disabled/error states; verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-16",
-      "summary": "Show per-set target weights in trainer-side workout list/detail rendering with a sensible fallback for older workouts.",
+      "id": "REQ-3",
+      "summary": "Improve trainer login error categorization to show specific English messages (wrong code vs service unavailable vs authorization) and only fall back to the generic message when truly unknown.",
       "acceptanceCriteria": [
-        "Trainer workout list/detail rendering shows per-set target weights when present.",
-        "Older workouts without per-set weights render without crashes and display the legacy single target weight."
+        "If the backend rejects due to incorrect access code (e.g., \"La password inserita non è corretta!\"), the UI displays an incorrect-code message in English.",
+        "If the backend/agent is unreachable or the actor cannot be created, the UI displays a service-unavailable message in English.",
+        "The generic message \"Unable to authenticate. Please verify your access code.\" is used only when no more specific category can be determined."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/trainer/ClientWorkoutsList.tsx",
+          "path": "frontend/src/utils/trainerAuthErrors.ts",
           "operation": "modify",
-          "description": "Update trainer workout rendering to display per-set target weights for each exercise when available (e.g., a concise 'Set 1: … kg, Set 2: … kg' line), and fall back to the legacy single target weight display when per-set weights are missing/empty. Reuse shared helpers for consistent formatting and backward-compatible detection. Use existing shadcn-ui Card layout patterns; verify the component's usage instructions before implementing."
+          "description": "Extend error extraction and mapping logic to reliably classify common failure modes: incorrect access code (including Italian backend strings), service/agent unreachable (network/fetch/actor-creation failures), and authorization/permission traps. Ensure unknown non-empty errors do not automatically map to the generic message unless no category can be determined."
+        },
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Update the trainer login error handling integration to prefer the new specific error categories from trainerAuthErrors, and ensure actor-readiness errors (REQ-2) are surfaced as service/availability messages rather than being mapped into incorrect-code or generic authentication errors. Continue using shadcn-ui Alert for error rendering; verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Translate all trainer login page copy to English while preserving behavior.",
+      "acceptanceCriteria": [
+        "All visible text on the trainer login page (including headings, labels, placeholders, buttons, separators, and loading text) is in English.",
+        "The trainer login page continues to function as before aside from copy changes."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Replace all user-facing Italian copy on the trainer login page with English equivalents (title/description, label/placeholder, primary/secondary button text, separator text, loading text, and any helper text) without changing functionality. Continue using shadcn-ui components already in the page; verify the component's usage instructions before implementing."
         }
       ]
     }

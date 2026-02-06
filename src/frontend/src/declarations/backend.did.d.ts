@@ -19,6 +19,7 @@ export interface Exercise {
   'name' : string,
   'sets' : bigint,
   'setWeights' : Array<bigint>,
+  'restTime' : bigint,
   'repetitions' : bigint,
 }
 export interface ExerciseLog {
@@ -28,6 +29,7 @@ export interface ExerciseLog {
   'sets' : bigint,
   'actualSets' : bigint,
   'setWeights' : Array<bigint>,
+  'restTime' : bigint,
   'repetitions' : bigint,
 }
 export interface ExercisePerformance { 'date' : string, 'exercise' : Exercise }
@@ -69,8 +71,12 @@ export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'authenticateClient' : ActorMethod<[string, string], undefined>,
   'authenticateTrainer' : ActorMethod<[string], bigint>,
-  'createWorkout' : ActorMethod<
+  'createClientWorkout' : ActorMethod<
     [string, string, Array<Exercise>, string],
+    undefined
+  >,
+  'createOwnWorkout' : ActorMethod<
+    [string, Array<Exercise>, string],
     undefined
   >,
   'getBodyWeightHistory' : ActorMethod<[string], Array<BodyWeightEntry>>,
@@ -97,6 +103,10 @@ export interface _SERVICE {
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setClientHeight' : ActorMethod<[string, bigint], undefined>,
   'updateClientEmail' : ActorMethod<[string, string], undefined>,
+  'updateClientWorkout' : ActorMethod<
+    [string, string, Array<Exercise>, string],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-trainer-workout-builder-ui-to-let-the-trainer-input-a-target-weight-kg-for-each-set-of-each-exercise-validate-the-inputs-and-submit-the-per-set-target-weights-when-creating-a-workout",
-      "featureTitle": "Update the trainer Workout Builder UI to let the trainer input a target weight (kg) for each set of each exercise, validate the inputs, and submit the per-set target weights when creating a workout.",
+      "featureId": "feature-fix-trainer-login-so-entering-the-access-code-12345-reliably-authenticates-and-navigates-into-the-trainer-dashboard-personal-area-without-showing-the-error-unable-to-authenticate-please-verify-your-access-code",
+      "featureTitle": "Fix trainer login so entering the access code \"12345\" reliably authenticates and navigates into the trainer dashboard (Personal area) without showing the error \"Unable to authenticate. Please verify your access code.\"",
       "files": [
-        "frontend/src/components/trainer/WorkoutBuilder.tsx",
-        "frontend/src/utils/workoutSetWeights.ts"
+        "frontend/src/pages/LoginPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -17,15 +16,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-14"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-client-assigned-workout-card-ui-to-display-the-per-set-target-weight-values-for-each-exercise-in-a-clear-readable-format-while-keeping-the-existing-workout-logging-flow-unchanged",
-      "featureTitle": "Update the client assigned workout card UI to display the per-set target weight values for each exercise in a clear, readable format while keeping the existing workout logging flow unchanged.",
+      "featureId": "feature-ensure-the-frontend-uses-a-backend-actor-that-is-fully-ready-for-update-calls-before-attempting-trainer-authentication-e-g-do-not-submit-while-the-actor-is-still-being-fetched-initialized-and-provide-a-deterministic-initialization-path-so-authentication-is-not-intermittently-rejected-due-to-actor-readiness-initialization-issues",
+      "featureTitle": "Ensure the frontend uses a backend actor that is fully ready for update calls before attempting trainer authentication (e.g., do not submit while the actor is still being fetched/initialized), and provide a deterministic initialization path so authentication is not intermittently rejected due to actor readiness/initialization issues.",
       "files": [
-        "frontend/src/components/client/CompilableAssignedWorkoutCard.tsx"
+        "frontend/src/pages/LoginPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -36,15 +35,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-15"
+        "REQ-2"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-trainer-side-workout-viewing-components-workout-list-detail-rendering-to-display-per-set-target-weights-for-each-exercise-with-a-sensible-fallback-for-older-workouts-that-do-not-have-per-set-weights",
-      "featureTitle": "Update trainer-side workout viewing components (workout list/detail rendering) to display per-set target weights for each exercise, with a sensible fallback for older workouts that do not have per-set weights.",
+      "featureId": "feature-improve-trainer-login-error-handling-so-the-ui-shows-the-most-specific-available-backend-error-message-category-wrong-code-vs-service-unavailable-vs-authorization-and-avoid-mapping-all-non-empty-errors-to-the-same-generic-unable-to-authenticate-message",
+      "featureTitle": "Improve trainer login error handling so the UI shows the most specific available backend error message category (wrong code vs service unavailable vs authorization), and avoid mapping all non-empty errors to the same generic \"Unable to authenticate\" message.",
       "files": [
-        "frontend/src/components/trainer/ClientWorkoutsList.tsx"
+        "frontend/src/pages/LoginPage.tsx",
+        "frontend/src/utils/trainerAuthErrors.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -55,7 +55,26 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-16"
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-trainer-login-page-user-facing-copy-to-english-labels-placeholders-button-text-loading-text-helper-text-while-preserving-functionality",
+      "featureTitle": "Update trainer login page user-facing copy to English (labels, placeholders, button text, loading text, helper text) while preserving functionality.",
+      "files": [
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

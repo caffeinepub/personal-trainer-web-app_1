@@ -179,7 +179,37 @@ export function useCreateWorkout() {
   return useMutation({
     mutationFn: async ({ clientUsername, name, exercises, comments }: { clientUsername: string; name: string; exercises: Exercise[]; comments: string }) => {
       if (!actor) throw new Error('Actor not available');
-      await actor.createWorkout(clientUsername, name, exercises, comments);
+      await actor.createClientWorkout(clientUsername, name, exercises, comments);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['clientWorkouts', variables.clientUsername] });
+    },
+  });
+}
+
+export function useCreateOwnWorkout() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clientUsername, name, exercises, comments }: { clientUsername: string; name: string; exercises: Exercise[]; comments: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.createOwnWorkout(name, exercises, comments);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['clientWorkouts', variables.clientUsername] });
+    },
+  });
+}
+
+export function useUpdateClientWorkout() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clientUsername, workoutName, exercises, comments }: { clientUsername: string; workoutName: string; exercises: Exercise[]; comments: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.updateClientWorkout(clientUsername, workoutName, exercises, comments);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['clientWorkouts', variables.clientUsername] });

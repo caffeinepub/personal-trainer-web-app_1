@@ -1,361 +1,48 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 12,
-  "summary": "Personal Trainer Web App: a React + Tailwind (shadcn/ui) single-page application backed by an Internet Computer (ICP) Motoko canister. The app supports trainer and client flows: trainers authenticate with an access code, receive a 5‑digit PT code to share, manage their client list, update client profile info, record physical metrics (height and bodyweight entries), review progression views (bodyweight and exercise performance), and create/assign workouts. Clients register/login using username + PT code, view assigned workouts, fill in actual workout results (sets/reps/weight) with optional notes and completion status, save workout logs, and view workout log history. Backend methods are wrapped by a centralized TanStack React Query hooks layer that handles caching and invalidation; workout log saving also updates exercise performance history for progression tracking.",
+  "projectStateVersion": 3,
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Reported that the current live/deployed Versione 16 still does not work (issue persists after deployment/build)."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "IF-1",
-      "title": "Trainer authentication via access code",
-      "synonyms": [
-        "Trainer login",
-        "authenticateTrainer"
-      ],
-      "description": "Trainers authenticate by submitting an access code; on success the backend marks the caller principal as a trainer (trainerTokens) and assigns/reuses a PT code. The frontend transitions to the trainer dashboard and persists trainer session type in sessionStorage.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-2",
-      "title": "Trainer PT code assignment and retrieval",
-      "synonyms": [
-        "PT code",
-        "getTrainerPtCode",
-        "trainerCodes"
-      ],
-      "description": "A 5-digit PT code is associated with a trainer principal and can be queried by authenticated trainers. The trainer dashboard displays the PT code and supports copy-to-clipboard UI.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-3",
-      "title": "Client registration linked to a trainer PT code",
-      "synonyms": [
-        "Client sign-up",
-        "registerClient"
-      ],
-      "description": "Clients register with a username, PT code, optional email/nickname, and a numeric 5-digit trainerCode. The backend validates the trainerCode exists, creates the client record linked to the trainer, and the frontend then authenticates the client automatically.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-4",
-      "title": "Client login with username + PT code and principal linkage",
-      "synonyms": [
-        "Client authentication",
-        "authenticateClient",
-        "principalToUsername"
-      ],
-      "description": "Clients authenticate with username + PT code; the backend validates credentials, links caller principal to the client username, stores the principal on the client record, and saves a caller UserProfile.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-5",
-      "title": "Trainer client list and client selection",
-      "synonyms": [
-        "My Clients",
-        "getClientsForTrainer"
-      ],
-      "description": "Trainer dashboard fetches and displays clients associated with the trainer’s PT code, supports selecting a client to view details, and shows loading/error/empty states.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-6",
-      "title": "Trainer client profile view and email/nickname editing",
-      "synonyms": [
-        "getClientProfile",
-        "updateClientEmail"
-      ],
-      "description": "Trainers can view a selected client’s profile and update the client’s email/nickname. Mutations invalidate relevant React Query caches (client profile and trainer clients list).",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-7",
-      "title": "Client workout progress history (legacy manual logging)",
-      "synonyms": [
-        "getClientProgress",
-        "WorkoutProgress"
-      ],
-      "description": "Clients can fetch and view a history of manually logged workout progress entries, including dashboard stats (total sessions and last workout date).",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-8",
-      "title": "Add manual workout progress entry (legacy)",
-      "synonyms": [
-        "addWorkoutProgress",
-        "Manual progress entry"
-      ],
-      "description": "Clients can submit a validated manual progress entry (exercise, sets/reps/weight, comments). The mutation invalidates/refetches the clientProgress query.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-9",
-      "title": "Client physical metrics management (height + bodyweight history)",
-      "synonyms": [
-        "setClientHeight",
-        "addBodyWeightEntry",
-        "getBodyWeightHistory"
-      ],
-      "description": "Trainer-or-self endpoints allow setting client height and adding/fetching bodyweight entries over time. Trainer UI includes current weight display and an add-entry form.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-10",
-      "title": "Bodyweight progression visualization",
-      "synonyms": [
-        "BodyweightProgressionChart",
-        "Weight history chart"
-      ],
-      "description": "Trainer UI renders bodyweight progression with summary stats (start/current/change) and a simple bar-style timeline visualization, with empty/loading/error states.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-11",
-      "title": "Exercise performance tracking and progression view",
-      "synonyms": [
-        "addExercisePerformance",
-        "getExercisePerformanceHistory",
-        "ExercisePerformanceProgression"
-      ],
-      "description": "Backend stores per-client exercise performance snapshots; trainer UI groups entries by exercise with a search filter and highlights change from first to latest records.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-12",
-      "title": "Trainer workout creation and assignment to a client",
-      "synonyms": [
-        "createWorkout",
-        "WorkoutBuilder"
-      ],
-      "description": "Trainers can build multi-exercise workouts with validation (exercise name, muscle group, sets, reps, weight) and assign them to a specific client. On success, client workouts are invalidated/refetched.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-13",
-      "title": "Fetch and display workouts assigned to a client",
-      "synonyms": [
-        "getWorkoutsForClient",
-        "ClientWorkoutsList",
-        "Assigned Workouts"
-      ],
-      "description": "Trainer and client flows can fetch workouts for a client (trainer-or-self authorization). Trainer UI shows assigned workouts in the client detail Workouts tab; client dashboard lists assigned workouts with an empty state when none exist.",
+      "id": "feature-fix-trainer-login-so-entering-the-access-code-12345-reliably-authenticates-and-navigates-into-the-trainer-dashboard-personal-area-without-showing-the-error-unable-to-authenticate-please-verify-your-access-code",
+      "title": "Fix trainer login so entering the access code \"12345\" reliably authenticates and navigates into the trainer dashboard (Personal area) without showing the error \"Unable to authenticate. Please verify your access code.\"",
       "reqIds": [
-        "REQ-10"
+        "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "IF-14",
-      "title": "Client-side compilable assigned workout UI",
-      "synonyms": [
-        "CompilableAssignedWorkoutCard",
-        "Workout completion form"
-      ],
-      "description": "For each assigned workout, clients can enter actual sets/reps/weight per exercise, optionally add notes, toggle completed/incomplete, and submit a workout log. Inputs are validated and the form resets on success.",
+      "id": "feature-ensure-the-frontend-uses-a-backend-actor-that-is-fully-ready-for-update-calls-before-attempting-trainer-authentication-e-g-do-not-submit-while-the-actor-is-still-being-fetched-initialized-and-provide-a-deterministic-initialization-path-so-authentication-is-not-intermittently-rejected-due-to-actor-readiness-initialization-issues",
+      "title": "Ensure the frontend uses a backend actor that is fully ready for update calls before attempting trainer authentication (e.g., do not submit while the actor is still being fetched/initialized), and provide a deterministic initialization path so authentication is not intermittently rejected due to actor readiness/initialization issues.",
       "reqIds": [
-        "REQ-11"
+        "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "IF-15",
-      "title": "Workout log persistence and exercise performance auto-update",
-      "synonyms": [
-        "logWorkoutCompletion",
-        "WorkoutLog",
-        "ExerciseLog"
-      ],
-      "description": "Backend stores workout logs keyed by a workoutId and enforces trainer-or-self authorization. When a log is saved, the backend derives and appends exercise performance entries based on actual logged values to keep progression views up to date.",
+      "id": "feature-improve-trainer-login-error-handling-so-the-ui-shows-the-most-specific-available-backend-error-message-category-wrong-code-vs-service-unavailable-vs-authorization-and-avoid-mapping-all-non-empty-errors-to-the-same-generic-unable-to-authenticate-message",
+      "title": "Improve trainer login error handling so the UI shows the most specific available backend error message category (wrong code vs service unavailable vs authorization), and avoid mapping all non-empty errors to the same generic \"Unable to authenticate\" message.",
       "reqIds": [
-        "REQ-11"
+        "REQ-3"
       ],
       "version": 1
     },
     {
-      "id": "IF-16",
-      "title": "Fetch workout logs for a client (history)",
-      "synonyms": [
-        "getWorkoutLogsForClient",
-        "useGetWorkoutLogsForClient"
-      ],
-      "description": "Backend query returns all workout logs for a client with trainer-or-self authorization. Frontend provides a React Query hook to fetch logs and uses it to render client-visible history.",
+      "id": "feature-update-trainer-login-page-user-facing-copy-to-english-labels-placeholders-button-text-loading-text-helper-text-while-preserving-functionality",
+      "title": "Update trainer login page user-facing copy to English (labels, placeholders, button text, loading text, helper text) while preserving functionality.",
       "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "IF-17",
-      "title": "Client-visible workout log history section",
-      "synonyms": [
-        "WorkoutLogsSection",
-        "Workout History"
-      ],
-      "description": "Client dashboard shows a scrollable workout history list sorted newest-first, including date formatting, completion status badge, target vs actual values per exercise, and trainer/client notes.",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "version": 1
-    },
-    {
-      "id": "IF-18",
-      "title": "Centralized React Query hooks layer for canister calls",
-      "synonyms": [
-        "useQueries",
-        "TanStack Query integration"
-      ],
-      "description": "frontend/src/hooks/useQueries.ts centralizes queries and mutations for progress, profiles, clients, PT codes, metrics, workouts, and workout logs. Mutations invalidate appropriate cache keys to keep UI consistent.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-19",
-      "title": "Actor lifecycle management with identity-aware creation",
-      "synonyms": [
-        "useActor",
-        "Actor caching"
-      ],
-      "description": "useActor creates anonymous or identity-bound canister actors, initializes access control for authenticated identities, caches actors by principal, and triggers refetch/invalidation of non-actor queries on actor changes.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-20",
-      "title": "Internet Identity authentication context",
-      "synonyms": [
-        "InternetIdentityProvider",
-        "AuthClient integration"
-      ],
-      "description": "A React context wraps @dfinity/auth-client to manage identity loading, login/logout, delegation validity checks, and status flags used by the app to create authenticated actors.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-21",
-      "title": "RBAC access control mixin for admin/user/guest roles",
-      "synonyms": [
-        "MixinAuthorization",
-        "AccessControl",
-        "_initializeAccessControlWithSecret"
-      ],
-      "description": "Motoko access-control module assigns roles (first matching token becomes admin, others become user), supports admin-only role assignment, and exposes query endpoints to read roles/admin status.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-22",
-      "title": "URL hash secret utilities for admin token handling",
-      "synonyms": [
-        "getSecretParameter",
-        "urlParams"
-      ],
-      "description": "Frontend utilities read sensitive parameters from the URL hash, persist them into sessionStorage, and remove them from the URL via history.replaceState to reduce leakage (used for caffeineAdminToken).",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-23",
-      "title": "Session-based UI auth persistence and logout clearing",
-      "synonyms": [
-        "sessionStorage auth",
-        "App view persistence"
-      ],
-      "description": "App.tsx stores trainer/client session type and client username in sessionStorage, restores dashboard state on reload, and clears both UI session state and React Query cache on logout.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "IF-24",
-      "title": "Backend state migration to add workoutLogs map",
-      "synonyms": [
-        "migration.mo",
-        "Schema upgrade"
-      ],
-      "description": "A Motoko migration module upgrades prior canister state to include an empty workoutLogs map while preserving existing clients, workouts, trainer codes/tokens, principal mappings, and user profiles.",
-      "reqIds": [],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-trainer-workout-builder-ui-to-let-the-trainer-input-a-target-weight-kg-for-each-set-of-each-exercise-validate-the-inputs-and-submit-the-per-set-target-weights-when-creating-a-workout",
-      "title": "Update the trainer Workout Builder UI to let the trainer input a target weight (kg) for each set of each exercise, validate the inputs, and submit the per-set target weights when creating a workout.",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-client-assigned-workout-card-ui-to-display-the-per-set-target-weight-values-for-each-exercise-in-a-clear-readable-format-while-keeping-the-existing-workout-logging-flow-unchanged",
-      "title": "Update the client assigned workout card UI to display the per-set target weight values for each exercise in a clear, readable format while keeping the existing workout logging flow unchanged.",
-      "reqIds": [
-        "REQ-15"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-trainer-side-workout-viewing-components-workout-list-detail-rendering-to-display-per-set-target-weights-for-each-exercise-with-a-sensible-fallback-for-older-workouts-that-do-not-have-per-set-weights",
-      "title": "Update trainer-side workout viewing components (workout list/detail rendering) to display per-set target weights for each exercise, with a sensible fallback for older workouts that do not have per-set weights.",
-      "reqIds": [
-        "REQ-16"
+        "REQ-4"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Add per-set rest time (seconds) configurable by trainer in workout builder and displayed in client assigned workout",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add per-set target weight (kg) configurable by trainer in workout builder and displayed in client assigned workout",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Extend the workout data model to support a target weight value for each set of an exercise (per-set target weight in kg), and expose it through the existing workout creation and workout retrieval canister methods so the frontend can create and display workouts with per-set target weights.",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "status": "pending"
-    }
-  ],
-  "architectural_notes": [
-    "Frontend is a SPA without a router; App.tsx controls view navigation via local state and persists auth type/username in sessionStorage.",
-    "Backend integration uses a canister actor created via createActorWithConfig; useActor caches the actor instance in React Query keyed by principal and invalidates/refetches dependent queries when identity changes.",
-    "TanStack React Query is used as the primary data layer (queries + mutations) with explicit query keys and cache invalidation on mutation success (e.g., progress, workouts, logs, profiles).",
-    "Internet Identity is integrated via a React context (InternetIdentityProvider) built on @dfinity/auth-client; identity is loaded on mount and login/logout APIs are exposed.",
-    "Authorization/RBAC is implemented via a Motoko AccessControl module included as a mixin (MixinAuthorization) and initialized from a secret token provided via URL hash/session.",
-    "Motoko canister uses in-memory Map-based state for clients, trainer codes/tokens, principal mappings, workouts, and workoutLogs; access checks generally follow a “trainer-or-self” pattern.",
-    "Schema upgrades are handled via a Motoko migration module wired via (with migration = Migration.run), currently extending state to include workoutLogs.",
-    "UI is built with Tailwind CSS theme tokens (OKLCH variables) and shadcn/ui components; pages consistently implement loading/empty/error states and pending-state disabling."
-  ],
-  "known_issues": [
-    "Trainer authentication uses a hard-coded password (correctTrainerPassword = \"12345\"), which is insecure and not configurable.",
-    "PT code generation is not actually random/unique (generateUnique5DigitCode uses a constant Nat64 = 12345), allowing collisions across trainers.",
-    "Workouts are stored in a Map keyed only by workout name; duplicate names can overwrite previous workouts and are not uniquely keyed per client/trainer.",
-    "Workout.creator is set to clientUsername in createWorkout (likely incorrect; should represent trainer identity/username).",
-    "Workout logs are stored in a Map keyed by client-supplied workoutId; IDs are not enforced as unique/derivable from a canonical workout identifier and may collide/allow overwrites.",
-    "logWorkoutCompletion updates exercisePerformanceHistory for all logged workouts regardless of completed status (comment says completed-only, but code does not check).",
-    "Height/weight inputs allow decimals in the UI, but hooks convert to BigInt and backend expects Nat; non-integer values can throw client-side when converted to BigInt.",
-    "getClientInfo returns the client’s codicePT (PT code) to authorized callers; this may be sensitive depending on the intended security model.",
-    "Two QueryClientProviders are instantiated (frontend/src/main.tsx and frontend/src/App.tsx), creating nested caches and potential confusion/inconsistent invalidation.",
-    "Access control initialization traps if CAFFEINE_ADMIN_TOKEN is not set on the canister; authenticated actor creation calls _initializeAccessControlWithSecret and can break login flows if misconfigured."
-  ],
-  "isFixRequest": false,
-  "gameProjectType": "none",
-  "projectName": "Personal Trainer Web App",
-  "clarification_mode": "pro",
+  "new_feature_requests": [],
+  "projectName": "Fix trainer access code login still rejecting code 12345",
+  "clarification_mode": "instant",
   "clarification_rounds": 0
 }

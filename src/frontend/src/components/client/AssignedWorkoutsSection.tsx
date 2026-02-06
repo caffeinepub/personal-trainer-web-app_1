@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList } from 'lucide-react';
 import { useGetWorkoutsForClient, useLogWorkoutCompletion } from '../../hooks/useQueries';
 import CompilableAssignedWorkoutCard from './CompilableAssignedWorkoutCard';
-import type { WorkoutLog } from '../../backend';
+import WorkoutRunnerOverlay from './WorkoutRunnerOverlay';
+import type { WorkoutLog, Workout } from '../../backend';
 
 interface AssignedWorkoutsSectionProps {
   username: string;
@@ -11,9 +13,22 @@ interface AssignedWorkoutsSectionProps {
 export default function AssignedWorkoutsSection({ username }: AssignedWorkoutsSectionProps) {
   const { data: workouts, isLoading } = useGetWorkoutsForClient(username);
   const logWorkoutMutation = useLogWorkoutCompletion();
+  
+  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
+  const [runnerOpen, setRunnerOpen] = useState(false);
 
   const handleSaveWorkout = async (log: WorkoutLog, workoutId: string) => {
     await logWorkoutMutation.mutateAsync({ log, workoutId });
+  };
+
+  const handleStartWorkout = (workout: Workout) => {
+    setActiveWorkout(workout);
+    setRunnerOpen(true);
+  };
+
+  const handleExitRunner = () => {
+    setRunnerOpen(false);
+    setActiveWorkout(null);
   };
 
   if (isLoading) {
@@ -24,7 +39,7 @@ export default function AssignedWorkoutsSection({ username }: AssignedWorkoutsSe
             <ClipboardList className="h-5 w-5" />
             Assigned Workouts
           </CardTitle>
-          <CardDescription>Workouts created by your trainer</CardDescription>
+          <CardDescription>Workouts from your trainer and your own workouts</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex h-40 items-center justify-center">
@@ -43,12 +58,12 @@ export default function AssignedWorkoutsSection({ username }: AssignedWorkoutsSe
             <ClipboardList className="h-5 w-5" />
             Assigned Workouts
           </CardTitle>
-          <CardDescription>Workouts created by your trainer</CardDescription>
+          <CardDescription>Workouts from your trainer and your own workouts</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border/50">
             <p className="text-sm text-muted-foreground">
-              No workouts assigned yet. Your trainer will create workouts for you.
+              No workouts yet. Your trainer can create workouts for you, or you can create your own.
             </p>
           </div>
         </CardContent>
@@ -57,25 +72,34 @@ export default function AssignedWorkoutsSection({ username }: AssignedWorkoutsSe
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="mb-2 text-2xl font-bold tracking-tight">Assigned Workouts</h2>
-        <p className="text-muted-foreground">
-          Complete and log your assigned workouts below
-        </p>
+    <>
+      <div className="space-y-6">
+        <div>
+          <h2 className="mb-2 text-2xl font-bold tracking-tight">Assigned Workouts</h2>
+          <p className="text-muted-foreground">
+            Complete and log your workouts below
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {workouts.map((workout, idx) => (
+            <CompilableAssignedWorkoutCard
+              key={idx}
+              workout={workout}
+              clientUsername={username}
+              onSave={handleSaveWorkout}
+              isSaving={logWorkoutMutation.isPending}
+              onStart={handleStartWorkout}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="space-y-6">
-        {workouts.map((workout, idx) => (
-          <CompilableAssignedWorkoutCard
-            key={idx}
-            workout={workout}
-            clientUsername={username}
-            onSave={handleSaveWorkout}
-            isSaving={logWorkoutMutation.isPending}
-          />
-        ))}
-      </div>
-    </div>
+      <WorkoutRunnerOverlay
+        workout={activeWorkout}
+        open={runnerOpen}
+        onExit={handleExitRunner}
+      />
+    </>
   );
 }

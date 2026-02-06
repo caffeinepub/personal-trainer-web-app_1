@@ -12,6 +12,7 @@ export const Exercise = IDL.Record({
   'name' : IDL.Text,
   'sets' : IDL.Nat,
   'setWeights' : IDL.Vec(IDL.Nat),
+  'restTime' : IDL.Nat,
   'repetitions' : IDL.Nat,
 });
 export const WorkoutProgress = IDL.Record({
@@ -49,6 +50,7 @@ export const ExerciseLog = IDL.Record({
   'sets' : IDL.Nat,
   'actualSets' : IDL.Nat,
   'setWeights' : IDL.Vec(IDL.Nat),
+  'restTime' : IDL.Nat,
   'repetitions' : IDL.Nat,
 });
 export const WorkoutLog = IDL.Record({
@@ -76,8 +78,13 @@ export const idlService = IDL.Service({
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'authenticateClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'authenticateTrainer' : IDL.Func([IDL.Text], [IDL.Nat], []),
-  'createWorkout' : IDL.Func(
+  'createClientWorkout' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Vec(Exercise), IDL.Text],
+      [],
+      [],
+    ),
+  'createOwnWorkout' : IDL.Func(
+      [IDL.Text, IDL.Vec(Exercise), IDL.Text],
       [],
       [],
     ),
@@ -127,6 +134,11 @@ export const idlService = IDL.Service({
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'setClientHeight' : IDL.Func([IDL.Text, IDL.Nat], [], []),
   'updateClientEmail' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'updateClientWorkout' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(Exercise), IDL.Text],
+      [],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -136,6 +148,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'sets' : IDL.Nat,
     'setWeights' : IDL.Vec(IDL.Nat),
+    'restTime' : IDL.Nat,
     'repetitions' : IDL.Nat,
   });
   const WorkoutProgress = IDL.Record({
@@ -170,6 +183,7 @@ export const idlFactory = ({ IDL }) => {
     'sets' : IDL.Nat,
     'actualSets' : IDL.Nat,
     'setWeights' : IDL.Vec(IDL.Nat),
+    'restTime' : IDL.Nat,
     'repetitions' : IDL.Nat,
   });
   const WorkoutLog = IDL.Record({
@@ -197,8 +211,13 @@ export const idlFactory = ({ IDL }) => {
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'authenticateClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'authenticateTrainer' : IDL.Func([IDL.Text], [IDL.Nat], []),
-    'createWorkout' : IDL.Func(
+    'createClientWorkout' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Vec(Exercise), IDL.Text],
+        [],
+        [],
+      ),
+    'createOwnWorkout' : IDL.Func(
+        [IDL.Text, IDL.Vec(Exercise), IDL.Text],
         [],
         [],
       ),
@@ -252,6 +271,11 @@ export const idlFactory = ({ IDL }) => {
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'setClientHeight' : IDL.Func([IDL.Text, IDL.Nat], [], []),
     'updateClientEmail' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'updateClientWorkout' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Vec(Exercise), IDL.Text],
+        [],
+        [],
+      ),
   });
 };
 

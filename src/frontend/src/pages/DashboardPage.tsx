@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dumbbell, LogOut, Activity, Calendar, Users, TrendingUp, Copy, CheckCircle2, AlertCircle, ArrowLeft, Mail } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dumbbell, LogOut, Activity, Calendar, Users, TrendingUp, Copy, CheckCircle2, AlertCircle, ArrowLeft, Mail, Settings, Lock } from 'lucide-react';
 import { useGetTrainerPtCode, useGetClientsForTrainer, useGetClientProfile, useUpdateClientEmail } from '../hooks/useQueries';
 import TrainerClientDetailSections from '../components/trainer/TrainerClientDetailSections';
 
@@ -20,6 +21,13 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const [newEmail, setNewEmail] = useState('');
   const [updateError, setUpdateError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  
+  // Personal settings state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const { data: ptCode, isLoading: ptCodeLoading, isError: ptCodeError } = useGetTrainerPtCode();
   const { data: clients = [], isLoading: clientsLoading, isError: clientsError } = useGetClientsForTrainer();
@@ -75,6 +83,50 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
       const errorMessage = err?.message || 'Failed to update email. Please try again.';
       setUpdateError(errorMessage);
     }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess(false);
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('Tutti i campi sono obbligatori');
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      setPasswordError('Il nuovo codice deve essere di almeno 4 caratteri');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('I codici non corrispondono');
+      return;
+    }
+
+    // TODO: Call backend method to update password when available
+    // For now, show a message that the feature is coming soon
+    setPasswordError('Funzionalità in arrivo: il backend non supporta ancora la modifica del codice di accesso');
+    
+    // When backend is ready, uncomment this:
+    /*
+    try {
+      await updateTrainerPasswordMutation.mutateAsync({
+        currentPassword,
+        newPassword,
+      });
+      setPasswordSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Impossibile aggiornare il codice. Riprova.';
+      setPasswordError(errorMessage);
+    }
+    */
   };
 
   const stats = [
@@ -211,169 +263,269 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             })}
           </div>
 
-          {/* My Clients Section */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                My Clients
-              </CardTitle>
-              <CardDescription>
-                {selectedClient ? 'Client details and management' : 'View and manage your clients'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {clientsLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : clientsError ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>Failed to load clients. Please try again.</AlertDescription>
-                </Alert>
-              ) : selectedClient ? (
-                // Client Detail View
-                <div className="space-y-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleBackToList}
-                    className="gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to clients list
-                  </Button>
+          {/* Tabbed Content: Clients and Personal Settings */}
+          <Tabs defaultValue="clients" className="space-y-4">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="clients" className="gap-2">
+                <Users className="h-4 w-4" />
+                I Miei Clienti
+              </TabsTrigger>
+              <TabsTrigger value="personal" className="gap-2">
+                <Settings className="h-4 w-4" />
+                Personale
+              </TabsTrigger>
+            </TabsList>
 
-                  {clientProfileLoading ? (
+            {/* Clients Tab */}
+            <TabsContent value="clients">
+              <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    My Clients
+                  </CardTitle>
+                  <CardDescription>
+                    {selectedClient ? 'Client details and management' : 'View and manage your clients'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {clientsLoading ? (
                     <div className="space-y-3">
-                      <Skeleton className="h-12 w-full" />
-                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
                     </div>
-                  ) : clientProfile ? (
-                    <>
-                      <div className="space-y-4 rounded-lg border border-border/50 bg-muted/30 p-6">
-                        <div>
-                          <Label className="text-sm font-medium text-muted-foreground">Username</Label>
-                          <p className="mt-1 text-lg font-semibold">{clientProfile.username}</p>
+                  ) : clientsError ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>Failed to load clients. Please try again.</AlertDescription>
+                    </Alert>
+                  ) : selectedClient ? (
+                    // Client Detail View
+                    <div className="space-y-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBackToList}
+                        className="gap-2"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to clients list
+                      </Button>
+
+                      {clientProfileLoading ? (
+                        <div className="space-y-3">
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
                         </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
-                            Email / Nickname
-                          </Label>
-                          {editingEmail ? (
-                            <div className="space-y-3">
-                              <Input
-                                id="email"
-                                type="text"
-                                value={newEmail}
-                                onChange={(e) => setNewEmail(e.target.value)}
-                                placeholder="Enter email or nickname"
-                                className="h-11"
-                                disabled={updateEmailMutation.isPending}
-                              />
-                              <div className="flex gap-2">
-                                <Button
-                                  onClick={handleSaveEmail}
-                                  disabled={updateEmailMutation.isPending}
-                                  size="sm"
-                                >
-                                  {updateEmailMutation.isPending ? (
-                                    <>
-                                      <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                                      Saving...
-                                    </>
-                                  ) : (
-                                    'Save'
-                                  )}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setEditingEmail(false)}
-                                  disabled={updateEmailMutation.isPending}
-                                  size="sm"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
+                      ) : clientProfile ? (
+                        <>
+                          <div className="space-y-4 rounded-lg border border-border/50 bg-muted/30 p-6">
+                            <div>
+                              <Label className="text-sm font-medium text-muted-foreground">Username</Label>
+                              <p className="mt-1 text-lg font-semibold">{clientProfile.username}</p>
                             </div>
-                          ) : (
-                            <div className="flex items-center justify-between">
-                              <p className="text-lg">
-                                {clientProfile.emailOrNickname || (
-                                  <span className="text-muted-foreground italic">Not set</span>
-                                )}
-                              </p>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleEditEmail}
-                                className="gap-2"
-                              >
-                                <Mail className="h-4 w-4" />
-                                Edit
-                              </Button>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
+                                Email / Nickname
+                              </Label>
+                              {editingEmail ? (
+                                <div className="space-y-3">
+                                  <Input
+                                    id="email"
+                                    type="text"
+                                    value={newEmail}
+                                    onChange={(e) => setNewEmail(e.target.value)}
+                                    placeholder="Enter email or nickname"
+                                    className="h-11"
+                                    disabled={updateEmailMutation.isPending}
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={handleSaveEmail}
+                                      disabled={updateEmailMutation.isPending}
+                                      size="sm"
+                                    >
+                                      {updateEmailMutation.isPending ? (
+                                        <>
+                                          <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                                          Saving...
+                                        </>
+                                      ) : (
+                                        'Save'
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setEditingEmail(false)}
+                                      disabled={updateEmailMutation.isPending}
+                                      size="sm"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between">
+                                  <p className="text-lg">
+                                    {clientProfile.emailOrNickname || (
+                                      <span className="text-muted-foreground italic">Not set</span>
+                                    )}
+                                  </p>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleEditEmail}
+                                    className="gap-2"
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                    Edit
+                                  </Button>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
 
-                        {updateError && (
-                          <Alert variant="destructive" className="animate-in fade-in-50">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{updateError}</AlertDescription>
-                          </Alert>
-                        )}
+                            {updateError && (
+                              <Alert variant="destructive" className="animate-in fade-in-50">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>{updateError}</AlertDescription>
+                              </Alert>
+                            )}
 
-                        {updateSuccess && (
-                          <Alert className="animate-in fade-in-50 border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <AlertDescription>Email updated successfully!</AlertDescription>
-                          </Alert>
-                        )}
+                            {updateSuccess && (
+                              <Alert className="animate-in fade-in-50 border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400">
+                                <CheckCircle2 className="h-4 w-4" />
+                                <AlertDescription>Email updated successfully!</AlertDescription>
+                              </Alert>
+                            )}
+                          </div>
+
+                          {/* New Client Detail Sections */}
+                          <TrainerClientDetailSections username={selectedClient} />
+                        </>
+                      ) : null}
+                    </div>
+                  ) : clients.length === 0 ? (
+                    // Empty State
+                    <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border/50">
+                      <div className="text-center">
+                        <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          No clients yet. Share your PT code to get started!
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    // Clients List
+                    <div className="space-y-2">
+                      {clients.map((client) => (
+                        <button
+                          key={client.username}
+                          onClick={() => handleClientClick(client.username)}
+                          className="w-full rounded-lg border border-border/50 bg-muted/30 p-4 text-left transition-all hover:border-primary/50 hover:bg-muted/50 hover:shadow-md"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{client.username}</p>
+                              {client.emailOrNickname && (
+                                <p className="text-sm text-muted-foreground">{client.emailOrNickname}</p>
+                              )}
+                            </div>
+                            <div className="text-muted-foreground">→</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Personal Settings Tab */}
+            <TabsContent value="personal">
+              <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Impostazioni Personali
+                  </CardTitle>
+                  <CardDescription>
+                    Gestisci il tuo codice di accesso trainer
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleChangePassword} className="space-y-6">
+                    <div className="space-y-4 rounded-lg border border-border/50 bg-muted/30 p-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password">Codice di Accesso Attuale</Label>
+                        <Input
+                          id="current-password"
+                          type="password"
+                          placeholder="Inserisci il codice attuale"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="h-11"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Il codice attuale è: <span className="font-mono font-semibold">12345</span>
+                        </p>
                       </div>
 
-                      {/* New Client Detail Sections */}
-                      <TrainerClientDetailSections username={selectedClient} />
-                    </>
-                  ) : null}
-                </div>
-              ) : clients.length === 0 ? (
-                // Empty State
-                <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border/50">
-                  <div className="text-center">
-                    <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      No clients yet. Share your PT code to get started!
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                // Clients List
-                <div className="space-y-2">
-                  {clients.map((client) => (
-                    <button
-                      key={client.username}
-                      onClick={() => handleClientClick(client.username)}
-                      className="w-full rounded-lg border border-border/50 bg-muted/30 p-4 text-left transition-all hover:border-primary/50 hover:bg-muted/50 hover:shadow-md"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">{client.username}</p>
-                          {client.emailOrNickname && (
-                            <p className="text-sm text-muted-foreground">{client.emailOrNickname}</p>
-                          )}
-                        </div>
-                        <div className="text-muted-foreground">→</div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">Nuovo Codice di Accesso</Label>
+                        <Input
+                          id="new-password"
+                          type="password"
+                          placeholder="Inserisci il nuovo codice"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="h-11"
+                        />
                       </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Conferma Nuovo Codice</Label>
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          placeholder="Conferma il nuovo codice"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+
+                    {passwordError && (
+                      <Alert variant="destructive" className="animate-in fade-in-50">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{passwordError}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    {passwordSuccess && (
+                      <Alert className="animate-in fade-in-50 border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <AlertDescription>Codice di accesso aggiornato con successo!</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button type="submit" className="w-full h-11 text-base font-semibold">
+                      Aggiorna Codice di Accesso
+                    </Button>
+
+                    <Alert className="border-primary/20 bg-primary/5">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Nota:</strong> Dopo aver modificato il codice di accesso, dovrai utilizzare il nuovo codice per accedere alla prossima sessione.
+                      </AlertDescription>
+                    </Alert>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 

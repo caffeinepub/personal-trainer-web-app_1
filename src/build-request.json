@@ -1,93 +1,101 @@
 {
   "kind": "build_request",
-  "title": "Add per-set target weight (kg) to trainer workout builder and client assigned workout view",
+  "title": "Fix trainer access code login still rejecting code 12345",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-13",
-      "text": "Extend the workout data model to support a target weight value for each set of an exercise (per-set target weight in kg), and expose it through the existing workout creation and workout retrieval canister methods so the frontend can create and display workouts with per-set target weights.",
-      "target": "backend",
+      "id": "REQ-1",
+      "text": "Fix trainer login so entering the access code \"12345\" reliably authenticates and navigates into the trainer dashboard (Personal area) without showing the error \"Unable to authenticate. Please verify your access code.\"",
+      "target": "both",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Aggiungere **solo il peso per ogni serie** (kg)"
+          "continua a non andare"
         ]
       },
       "acceptanceCriteria": [
-        "A workout exercise can store a list of target weights with one entry per set.",
-        "createWorkout accepts the per-set target weight data and persists it with the workout.",
-        "getWorkoutsForClient returns workouts including per-set target weights for each exercise.",
-        "Existing workouts without per-set target weights continue to load without trapping (backward compatibility)."
+        "From the initial trainer login screen, submitting access code \"12345\" results in successful login and the trainer dashboard view is shown.",
+        "The error message \"Unable to authenticate. Please verify your access code.\" is not shown when the access code is correct.",
+        "Submitting an incorrect access code does not log in and shows a clear error state."
       ]
     },
     {
-      "id": "REQ-14",
-      "text": "Update the trainer Workout Builder UI to let the trainer input a target weight (kg) for each set of each exercise, validate the inputs, and submit the per-set target weights when creating a workout.",
+      "id": "REQ-2",
+      "text": "Ensure the frontend uses a backend actor that is fully ready for update calls before attempting trainer authentication (e.g., do not submit while the actor is still being fetched/initialized), and provide a deterministic initialization path so authentication is not intermittently rejected due to actor readiness/initialization issues.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "procediamo con l’aggiunta del **peso per ogni serie**"
+          "continua a non andare"
         ]
       },
       "acceptanceCriteria": [
-        "For each exercise, after the trainer sets the number of sets, the UI renders weight inputs for Set 1..Set N.",
-        "Validation blocks submission if any per-set weight is missing or invalid (must be a non-negative number).",
-        "On submit, the payload sent through the existing createWorkout flow includes the per-set target weights and the workout is created successfully."
+        "The trainer login submit button is disabled (or submission is blocked) until the backend actor is available and initialization steps required for authenticated flows are completed.",
+        "If the backend actor is null/unavailable, the UI shows a specific actionable error (not the generic \"Unable to authenticate\" message).",
+        "Repeated attempts with the correct code in the same session succeed consistently (no intermittent failures)."
       ]
     },
     {
-      "id": "REQ-15",
-      "text": "Update the client assigned workout card UI to display the per-set target weight values for each exercise in a clear, readable format while keeping the existing workout logging flow unchanged.",
+      "id": "REQ-3",
+      "text": "Improve trainer login error handling so the UI shows the most specific available backend error message category (wrong code vs service unavailable vs authorization), and avoid mapping all non-empty errors to the same generic \"Unable to authenticate\" message.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "li renderò visibili nel **workout assegnato al cliente**"
+          "continua a non andare"
         ]
       },
       "acceptanceCriteria": [
-        "Each assigned exercise shows the set-by-set target weights (e.g., 'Set 1: 50kg, Set 2: 52.5kg, ...') in addition to sets/reps targets.",
-        "Client can still enter actual sets/reps/weight and save the workout log successfully without any new required fields.",
-        "If an older workout has no per-set weights, the UI falls back to the existing single target weight display without errors."
+        "If the backend rejects due to incorrect access code (e.g., \"La password inserita non è corretta!\"), the UI displays an incorrect-code message in English.",
+        "If the backend/agent is unreachable or the actor cannot be created, the UI displays a service-unavailable message in English.",
+        "The generic message \"Unable to authenticate. Please verify your access code.\" is used only when no more specific category can be determined."
       ]
     },
     {
-      "id": "REQ-16",
-      "text": "Update trainer-side workout viewing components (workout list/detail rendering) to display per-set target weights for each exercise, with a sensible fallback for older workouts that do not have per-set weights.",
+      "id": "REQ-4",
+      "text": "Update trainer login page user-facing copy to English (labels, placeholders, button text, loading text, helper text) while preserving functionality.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "peso per ogni serie"
+          "continua a non andare"
         ]
       },
       "acceptanceCriteria": [
-        "Trainer workout list/detail rendering shows per-set target weights when present.",
-        "Older workouts without per-set weights render without crashes and display the legacy single target weight."
+        "All visible text on the trainer login page (including headings, labels, placeholders, buttons, separators, and loading text) is in English.",
+        "The trainer login page continues to function as before aside from copy changes."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko canister; keep all logic in backend/main.mo.",
-    "Do not edit any frontend files under frontend/src/components/ui or any paths listed as immutable in SYSTEM_CONTEXT.",
-    "Use English for any user-facing text introduced or modified in the UI."
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or anything in frontend/src/components/ui (these paths are immutable).",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add a migration file if a stable-state schema upgrade is required."
   ],
   "nonGoals": [
-    "Do not implement per-set rest time (seconds) in this change.",
-    "Do not change the workout logging model to collect per-set actual weights; keep the current single actualWeight input per exercise.",
-    "Do not address unrelated known issues (trainer password security, PT code randomness, workout ID uniqueness, nested QueryClientProviders) as part of this request."
+    "Implementing third-party authentication providers (only Internet Identity is supported).",
+    "Adding real-time features (WebSockets/chat/push).",
+    "Changing the trainer access code away from \"12345\" or adding a full password-change flow (unless required strictly to fix the login rejection bug)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

@@ -18,6 +18,7 @@ import BodyweightProgressionChart from './BodyweightProgressionChart';
 import ExercisePerformanceProgression from './ExercisePerformanceProgression';
 import WorkoutBuilder from './WorkoutBuilder';
 import ClientWorkoutsList from './ClientWorkoutsList';
+import type { Workout } from '../../backend';
 
 interface TrainerClientDetailSectionsProps {
   username: string;
@@ -30,6 +31,7 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
   const [heightError, setHeightError] = useState('');
   const [weightError, setWeightError] = useState('');
   const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
 
   const setHeightMutation = useSetClientHeight();
   const addWeightMutation = useAddBodyWeightEntry();
@@ -75,6 +77,16 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
     } catch (err: any) {
       setWeightError(err?.message || 'Failed to add weight entry. Please try again.');
     }
+  };
+
+  const handleEditWorkout = (workout: Workout) => {
+    setEditingWorkout(workout);
+    setShowWorkoutBuilder(true);
+  };
+
+  const handleCloseBuilder = () => {
+    setShowWorkoutBuilder(false);
+    setEditingWorkout(null);
   };
 
   const latestWeight = bodyWeightHistory.length > 0 
@@ -263,12 +275,14 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Create New Workout</CardTitle>
-                  <CardDescription>Design a workout plan for {username}</CardDescription>
+                  <CardTitle>{editingWorkout ? 'Edit Workout' : 'Create New Workout'}</CardTitle>
+                  <CardDescription>
+                    {editingWorkout ? `Editing "${editingWorkout.name}"` : `Design a workout plan for ${username}`}
+                  </CardDescription>
                 </div>
                 <Button
                   variant="outline"
-                  onClick={() => setShowWorkoutBuilder(false)}
+                  onClick={handleCloseBuilder}
                 >
                   Cancel
                 </Button>
@@ -277,7 +291,9 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
             <CardContent>
               <WorkoutBuilder
                 clientUsername={username}
-                onSuccess={() => setShowWorkoutBuilder(false)}
+                onSuccess={handleCloseBuilder}
+                mode={editingWorkout ? 'edit' : 'trainer'}
+                existingWorkout={editingWorkout || undefined}
               />
             </CardContent>
           </Card>
@@ -292,7 +308,7 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
             <Card>
               <CardHeader>
                 <CardTitle>Assigned Workouts</CardTitle>
-                <CardDescription>Workouts created for {username}</CardDescription>
+                <CardDescription>Workouts for {username}</CardDescription>
               </CardHeader>
               <CardContent>
                 {workoutsLoading ? (
@@ -306,7 +322,7 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
                     <AlertDescription>Failed to load workouts. Please try again.</AlertDescription>
                   </Alert>
                 ) : (
-                  <ClientWorkoutsList workouts={workouts} />
+                  <ClientWorkoutsList workouts={workouts} onEdit={handleEditWorkout} />
                 )}
               </CardContent>
             </Card>

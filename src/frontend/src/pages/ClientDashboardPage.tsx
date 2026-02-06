@@ -10,6 +10,7 @@ import { Dumbbell, LogOut, Plus, TrendingUp, Calendar, AlertCircle, CheckCircle2
 import { useGetClientProgress, useAddWorkoutProgress } from '../hooks/useQueries';
 import AssignedWorkoutsSection from '../components/client/AssignedWorkoutsSection';
 import WorkoutLogsSection from '../components/client/WorkoutLogsSection';
+import WorkoutBuilder from '../components/trainer/WorkoutBuilder';
 import type { WorkoutProgress } from '../backend';
 
 interface ClientDashboardPageProps {
@@ -19,6 +20,7 @@ interface ClientDashboardPageProps {
 
 export default function ClientDashboardPage({ username, onLogout }: ClientDashboardPageProps) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false);
   const [exerciseName, setExerciseName] = useState('');
   const [sets, setSets] = useState('');
   const [reps, setReps] = useState('');
@@ -65,7 +67,8 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
         name: exerciseName,
         sets: BigInt(setsNum),
         repetitions: BigInt(repsNum),
-        setWeights: Array(setsNum).fill(BigInt(weightNum))
+        setWeights: Array(setsNum).fill(BigInt(weightNum)),
+        restTime: BigInt(60)
       }],
       comments: comments
     };
@@ -185,6 +188,54 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
 
           {/* Assigned Workouts Section */}
           <AssignedWorkoutsSection username={username} />
+
+          <Separator />
+
+          {/* Create Own Workout Section */}
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight">Create Your Own Workout</h2>
+                <p className="text-muted-foreground">Design a custom workout plan</p>
+              </div>
+              {!showWorkoutBuilder && (
+                <Button onClick={() => setShowWorkoutBuilder(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Workout
+                </Button>
+              )}
+            </div>
+
+            {showWorkoutBuilder && (
+              <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>New Workout</CardTitle>
+                      <CardDescription>Create a workout for yourself</CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowWorkoutBuilder(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <WorkoutBuilder
+                    clientUsername={username}
+                    onSuccess={() => {
+                      setShowWorkoutBuilder(false);
+                      setSuccess('Workout created successfully!');
+                      setTimeout(() => setSuccess(''), 3000);
+                    }}
+                    mode="client"
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
           <Separator />
 

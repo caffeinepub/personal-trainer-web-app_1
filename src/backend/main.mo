@@ -8,16 +8,12 @@ import Principal "mo:core/Principal";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-import Migration "migration";
 
-// Apply migration
-(with migration = Migration.run)
+// Run migration on upgrade
 actor {
-  // Authorization
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // Types
   type WorkoutProgress = {
     date : Text;
     exercises : [Exercise];
@@ -29,6 +25,7 @@ actor {
     sets : Nat;
     repetitions : Nat;
     setWeights : [Nat]; // Set-weights - array in kg per set
+    restTime : Nat; // New field: rest time in seconds
   };
 
   // Exercise performance (per exercise, per workout/measurement)
@@ -41,7 +38,7 @@ actor {
     name : Text;
     exercises : [Exercise];
     comments : Text;
-    creator : Text; // Trainer username
+    creator : Text;
     clientUsername : Text;
   };
 
@@ -83,6 +80,7 @@ actor {
     actualSets : Nat;
     actualRepetitions : Nat;
     actualSetWeights : [Nat]; // Actual set weights used
+    restTime : Nat; // Add rest time also to exercise log
   };
 
   public type WorkoutLog = {
@@ -122,23 +120,27 @@ actor {
     client.trainerCode == trainerCode.toText();
   };
 
+  func isAuthenticatedUser(caller : Principal) : Bool {
+    trainerTokens.containsKey(caller) or principalToUsername.containsKey(caller);
+  };
+
   // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not isAuthenticatedUser(caller)) {
       Runtime.trap("Unauthorized: Only authenticated users can view profiles");
     };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not isAuthenticatedUser(caller)) {
       Runtime.trap("Unauthorized: Only authenticated users can view profiles");
     };
-    
+
     if (caller != user and not isTrainer(caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
-    
+
     // If trainer is viewing a client profile, verify the client belongs to them
     if (caller != user and isTrainer(caller)) {
       let trainerCode = switch (trainerCodes.get(caller)) {
@@ -147,7 +149,7 @@ actor {
           Runtime.trap("No PT code for this trainer.");
         };
       };
-      
+
       // Get the username for the user principal
       switch (principalToUsername.get(user)) {
         case (?username) {
@@ -163,12 +165,12 @@ actor {
         case (null) { /* User has no username mapping, allow */ };
       };
     };
-    
+
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (not isAuthenticatedUser(caller)) {
       Runtime.trap("Unauthorized: Only authenticated users can save profiles");
     };
     userProfiles.add(caller, profile);
@@ -185,12 +187,9 @@ actor {
     if (not isTrainerPasswordCorrect(password)) {
       Runtime.trap("La password inserita non è corretta!");
     };
-    
+
     // Add caller to trainerTokens
     trainerTokens.add(caller, true);
-    
-    // Assign user role via AccessControl
-    AccessControl.assignRole(accessControlState, caller, caller, #user);
 
     // Save trainer profile
     let trainerProfile : UserProfile = {
@@ -214,14 +213,10 @@ actor {
   };
 
   public query ({ caller }) func getTrainerPtCode() : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can fetch PT code");
-    };
-    
     if (not isTrainer(caller)) {
-      Runtime.trap("Unauthorized: Only valid trainers can fetch PT code");
+      Runtime.trap("Unauthorized: Only authenticated trainers can fetch PT code");
     };
-    
+
     switch (trainerCodes.get(caller)) {
       case (?code) {
         code;
@@ -232,7 +227,7 @@ actor {
     };
   };
 
-  // Client Registration - No authentication required for registration
+  // Client Registration/Authentication
   public shared ({ caller }) func registerClient(
     username : Text,
     codicePT : Text,
@@ -275,7 +270,6 @@ actor {
     };
   };
 
-  // Client Authentication
   public shared ({ caller }) func authenticateClient(username : Text, codicePT : Text) : async () {
     switch (clients.get(username)) {
       case (null) {
@@ -288,9 +282,6 @@ actor {
 
         // Link principal to username
         principalToUsername.add(caller, username);
-        
-        // Assign user role via AccessControl
-        AccessControl.assignRole(accessControlState, caller, caller, #user);
 
         // Update client with principal
         let updatedClient = {
@@ -313,14 +304,10 @@ actor {
 
   // Trainer-facing Client Management
   public query ({ caller }) func getClientsForTrainer() : async [ClientProfile] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can fetch clients list");
-    };
-    
     if (not isTrainer(caller)) {
       Runtime.trap("Unauthorized: Only trainers can fetch clients list");
     };
-    
+
     let trainerCode = switch (trainerCodes.get(caller)) {
       case (?code) { code };
       case (null) {
@@ -344,10 +331,6 @@ actor {
   };
 
   public query ({ caller }) func getClientProfile(username : Text) : async ClientProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can fetch client profiles");
-    };
-    
     if (not isTrainer(caller)) {
       Runtime.trap("Unauthorized: Only trainers can fetch client profiles");
     };
@@ -376,10 +359,6 @@ actor {
   };
 
   public shared ({ caller }) func updateClientEmail(username : Text, newEmail : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can update client emails");
-    };
-    
     if (not isTrainer(caller)) {
       Runtime.trap("Unauthorized: Only trainers can update client emails");
     };
@@ -431,12 +410,12 @@ actor {
     username : Text,
     progress : WorkoutProgress,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can add progress");
-    };
-    
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to add progress");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -484,12 +463,12 @@ actor {
   };
 
   public query ({ caller }) func getClientProgress(username : Text) : async [WorkoutProgress] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view progress");
-    };
-    
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to view progress");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -534,12 +513,12 @@ actor {
   };
 
   public query ({ caller }) func getClientInfo(username : Text) : async (Text, Text, ?Text) {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view client info");
-    };
-    
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to view client info");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -583,15 +562,14 @@ actor {
     };
   };
 
-  // New Endpoints for Bodyweight, Height, Exercise Performance, Workouts
+  // Bodyweight, Height, Exercise Performances
   public shared ({ caller }) func setClientHeight(username : Text, height : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can update height");
-    };
-    
-    // Permission check: trainer or self
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to update height");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -636,13 +614,12 @@ actor {
     weight : Nat,
     date : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can update weight");
-    };
-    
-    // Permission check: trainer or self
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to update weight");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -690,13 +667,12 @@ actor {
   };
 
   public query ({ caller }) func getBodyWeightHistory(username : Text) : async [BodyWeightEntry] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view weight history");
-    };
-    
-    // Permission check: trainer or self
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to view weight history");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -710,7 +686,6 @@ actor {
         };
       };
     } else {
-      // Trainer is viewing - verify client belongs to trainer
       let trainerCode = switch (trainerCodes.get(caller)) {
         case (?code) { code };
         case (null) {
@@ -741,13 +716,12 @@ actor {
     exercise : Exercise,
     date : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can add performance data");
-    };
-    
-    // Permission check: trainer or self
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to add performance data");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -797,13 +771,12 @@ actor {
   public query ({ caller }) func getExercisePerformanceHistory(
     username : Text,
   ) : async [ExercisePerformance] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view performance history");
-    };
-    
-    // Permission check: trainer or self
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to view performance history");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -817,7 +790,6 @@ actor {
         };
       };
     } else {
-      // Trainer is viewing - verify client belongs to trainer
       let trainerCode = switch (trainerCodes.get(caller)) {
         case (?code) { code };
         case (null) {
@@ -843,21 +815,17 @@ actor {
     };
   };
 
-  public shared ({ caller }) func createWorkout(
+  // EXTENDED WORKOUT SUPPORT
+  // =========================
+
+  // Only trainers can create workouts for clients
+  public shared ({ caller }) func createClientWorkout(
     clientUsername : Text,
     name : Text,
     exercises : [Exercise],
     comments : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can create workouts");
-    };
-    
-    // Only trainers can create workouts
-    if (not isTrainer(caller)) {
-      Runtime.trap("Unauthorized: Only trainers can create workouts");
-    };
-
+    // Trainers only
     let trainerCode = switch (trainerCodes.get(caller)) {
       case (?code) { code };
       case (null) {
@@ -885,17 +853,83 @@ actor {
       comments;
     };
 
-    workouts.add(name, newWorkout);
+    // Use clientUsername + "_" + name as unique key
+    workouts.add(clientUsername.concat("_").concat(name), newWorkout);
+  };
+
+  // Clients can create their own workouts (with empty creator field)
+  public shared ({ caller }) func createOwnWorkout(
+    name : Text,
+    exercises : [Exercise],
+    comments : Text,
+  ) : async () {
+    let callerUsername = switch (principalToUsername.get(caller)) {
+      case (?username) { username };
+      case (null) {
+        Runtime.trap("You must be authenticated as a client to create your own workout");
+      };
+    };
+
+    let newWorkout : Workout = {
+      creator = "";
+      clientUsername = callerUsername;
+      name;
+      exercises;
+      comments;
+    };
+
+    workouts.add(callerUsername.concat("_").concat(name), newWorkout);
+  };
+
+  public shared ({ caller }) func updateClientWorkout(
+    clientUsername : Text,
+    workoutName : Text,
+    exercises : [Exercise],
+    comments : Text,
+  ) : async () {
+    // Only trainers can update workouts for clients
+    let trainerCode = switch (trainerCodes.get(caller)) {
+      case (?code) { code };
+      case (null) {
+        Runtime.trap("No PT code for this trainer.");
+      };
+    };
+
+    // Verify the client belongs to this trainer
+    switch (clients.get(clientUsername)) {
+      case (null) {
+        Runtime.trap("Utente non trovato.");
+      };
+      case (?client) {
+        if (not isClientOwnedByTrainer(client, trainerCode)) {
+          Runtime.trap("Unauthorized: You can only update workouts for your own clients");
+        };
+      };
+    };
+
+    switch (workouts.get(clientUsername.concat("_").concat(workoutName))) {
+      case (null) {
+        Runtime.trap("Workout not found for this client");
+      };
+      case (?existingWorkout) {
+        let updatedWorkout : Workout = {
+          existingWorkout with
+          exercises;
+          comments;
+        };
+
+        workouts.add(clientUsername.concat("_").concat(workoutName), updatedWorkout);
+      };
+    };
   };
 
   public query ({ caller }) func getWorkoutsForClient(clientUsername : Text) : async [Workout] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view workouts");
-    };
-    
-    // Permission check: trainer or self
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to view workouts");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {
@@ -909,7 +943,6 @@ actor {
         };
       };
     } else {
-      // Trainer is viewing - verify client belongs to trainer
       let trainerCode = switch (trainerCodes.get(caller)) {
         case (?code) { code };
         case (null) {
@@ -938,15 +971,14 @@ actor {
     log : WorkoutLog,
     workoutId : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can log workouts");
-    };
-    
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
 
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to log a workout");
+    };
+
     if (not hasTrainerToken) {
-      // Client logging their own workout
       switch (callerUsername) {
         case (null) {
           Runtime.trap("Unauthorized: You must be authenticated to log a workout");
@@ -958,7 +990,6 @@ actor {
         };
       };
     } else {
-      // Trainer logging a workout - verify client belongs to trainer
       let trainerCode = switch (trainerCodes.get(caller)) {
         case (?code) { code };
         case (null) {
@@ -980,7 +1011,6 @@ actor {
 
     workoutLogs.add(workoutId, log);
 
-    // Update exercise performance history for completed workouts
     let exercisePerformances = log.exercises.map(
       func(exerciseLog) {
         {
@@ -990,6 +1020,7 @@ actor {
             sets = exerciseLog.actualSets;
             repetitions = exerciseLog.actualRepetitions;
             setWeights = exerciseLog.actualSetWeights;
+            restTime = exerciseLog.restTime;
           };
         };
       }
@@ -1010,12 +1041,12 @@ actor {
   };
 
   public query ({ caller }) func getWorkoutLogsForClient(username : Text) : async [WorkoutLog] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only authenticated users can view workout logs");
-    };
-    
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
+
+    if (not hasTrainerToken and callerUsername == null) {
+      Runtime.trap("Unauthorized: You must be authenticated to view workout logs");
+    };
 
     if (not hasTrainerToken) {
       switch (callerUsername) {

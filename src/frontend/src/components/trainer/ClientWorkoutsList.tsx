@@ -1,13 +1,16 @@
 import type { Workout } from '../../backend';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dumbbell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dumbbell, Edit } from 'lucide-react';
 import { hasPerSetWeights, formatSetWeights } from '../../utils/workoutSetWeights';
+import { formatRestTimes } from '../../utils/workoutRestTimes';
 
 interface ClientWorkoutsListProps {
   workouts: Workout[];
+  onEdit?: (workout: Workout) => void;
 }
 
-export default function ClientWorkoutsList({ workouts }: ClientWorkoutsListProps) {
+export default function ClientWorkoutsList({ workouts, onEdit }: ClientWorkoutsListProps) {
   if (workouts.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border/50">
@@ -27,10 +30,23 @@ export default function ClientWorkoutsList({ workouts }: ClientWorkoutsListProps
         <Card key={index} className="border-border/50 bg-muted/30">
           <CardContent className="pt-6">
             <div className="space-y-3">
-              <div>
-                <h3 className="text-lg font-semibold">{workout.name}</h3>
-                {workout.comments && (
-                  <p className="mt-1 text-sm text-muted-foreground">{workout.comments}</p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">{workout.name}</h3>
+                  {workout.comments && (
+                    <p className="mt-1 text-sm text-muted-foreground">{workout.comments}</p>
+                  )}
+                </div>
+                {onEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEdit(workout)}
+                    className="gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Button>
                 )}
               </div>
 
@@ -39,6 +55,7 @@ export default function ClientWorkoutsList({ workouts }: ClientWorkoutsListProps
                 <div className="space-y-2">
                   {workout.exercises.map((exercise, exIndex) => {
                     const hasSetWeights = hasPerSetWeights(exercise.setWeights);
+                    const restTimeDisplay = exercise.restTime ? `${Number(exercise.restTime)}s` : '60s';
                     
                     return (
                       <div
@@ -63,6 +80,9 @@ export default function ClientWorkoutsList({ workouts }: ClientWorkoutsListProps
                             {formatSetWeights(exercise.setWeights)}
                           </p>
                         )}
+                        <p className="text-xs text-muted-foreground pt-1">
+                          Rest: {restTimeDisplay}
+                        </p>
                       </div>
                     );
                   })}

@@ -15,6 +15,7 @@ export interface Exercise {
     name: string;
     sets: bigint;
     setWeights: Array<bigint>;
+    restTime: bigint;
     repetitions: bigint;
 }
 export interface WorkoutLog {
@@ -59,6 +60,7 @@ export interface ExerciseLog {
     sets: bigint;
     actualSets: bigint;
     setWeights: Array<bigint>;
+    restTime: bigint;
     repetitions: bigint;
 }
 export enum UserRole {
@@ -73,7 +75,8 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     authenticateClient(username: string, codicePT: string): Promise<void>;
     authenticateTrainer(password: string): Promise<bigint>;
-    createWorkout(clientUsername: string, name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
+    createClientWorkout(clientUsername: string, name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
+    createOwnWorkout(name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
     getBodyWeightHistory(username: string): Promise<Array<BodyWeightEntry>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
@@ -92,4 +95,5 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setClientHeight(username: string, height: bigint): Promise<void>;
     updateClientEmail(username: string, newEmail: string): Promise<void>;
+    updateClientWorkout(clientUsername: string, workoutName: string, exercises: Array<Exercise>, comments: string): Promise<void>;
 }

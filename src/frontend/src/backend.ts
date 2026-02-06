@@ -97,6 +97,7 @@ export interface Exercise {
     name: string;
     sets: bigint;
     setWeights: Array<bigint>;
+    restTime: bigint;
     repetitions: bigint;
 }
 export interface WorkoutLog {
@@ -141,6 +142,7 @@ export interface ExerciseLog {
     sets: bigint;
     actualSets: bigint;
     setWeights: Array<bigint>;
+    restTime: bigint;
     repetitions: bigint;
 }
 export enum UserRole {
@@ -156,7 +158,8 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     authenticateClient(username: string, codicePT: string): Promise<void>;
     authenticateTrainer(password: string): Promise<bigint>;
-    createWorkout(clientUsername: string, name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
+    createClientWorkout(clientUsername: string, name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
+    createOwnWorkout(name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
     getBodyWeightHistory(username: string): Promise<Array<BodyWeightEntry>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
@@ -175,6 +178,7 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setClientHeight(username: string, height: bigint): Promise<void>;
     updateClientEmail(username: string, newEmail: string): Promise<void>;
+    updateClientWorkout(clientUsername: string, workoutName: string, exercises: Array<Exercise>, comments: string): Promise<void>;
 }
 import type { ClientProfile as _ClientProfile, ExerciseLog as _ExerciseLog, UserProfile as _UserProfile, UserRole as _UserRole, WorkoutLog as _WorkoutLog } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -277,17 +281,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async createWorkout(arg0: string, arg1: string, arg2: Array<Exercise>, arg3: string): Promise<void> {
+    async createClientWorkout(arg0: string, arg1: string, arg2: Array<Exercise>, arg3: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.createWorkout(arg0, arg1, arg2, arg3);
+                const result = await this.actor.createClientWorkout(arg0, arg1, arg2, arg3);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.createWorkout(arg0, arg1, arg2, arg3);
+            const result = await this.actor.createClientWorkout(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async createOwnWorkout(arg0: string, arg1: Array<Exercise>, arg2: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createOwnWorkout(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createOwnWorkout(arg0, arg1, arg2);
             return result;
         }
     }
@@ -548,6 +566,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateClientEmail(arg0, arg1);
+            return result;
+        }
+    }
+    async updateClientWorkout(arg0: string, arg1: string, arg2: Array<Exercise>, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateClientWorkout(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateClientWorkout(arg0, arg1, arg2, arg3);
             return result;
         }
     }

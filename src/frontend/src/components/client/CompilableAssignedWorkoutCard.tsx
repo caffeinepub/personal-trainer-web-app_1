@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
-import { Dumbbell, Save, AlertCircle } from 'lucide-react';
+import { Dumbbell, Save, AlertCircle, Play } from 'lucide-react';
 import type { Workout, WorkoutLog, ExerciseLog } from '../../backend';
 import { hasPerSetWeights, formatSetWeights } from '../../utils/workoutSetWeights';
 
@@ -15,6 +15,7 @@ interface CompilableAssignedWorkoutCardProps {
   clientUsername: string;
   onSave: (log: WorkoutLog, workoutId: string) => Promise<void>;
   isSaving: boolean;
+  onStart?: (workout: Workout) => void;
 }
 
 export default function CompilableAssignedWorkoutCard({
@@ -22,6 +23,7 @@ export default function CompilableAssignedWorkoutCard({
   clientUsername,
   onSave,
   isSaving,
+  onStart,
 }: CompilableAssignedWorkoutCardProps) {
   const [exerciseValues, setExerciseValues] = useState<Record<number, { actualSets: string; actualReps: string; actualWeight: string }>>(
     workout.exercises.reduce((acc, _, idx) => {
@@ -88,6 +90,7 @@ export default function CompilableAssignedWorkoutCard({
         actualSets: BigInt(actualSetsCount),
         actualRepetitions: BigInt(parseInt(values.actualReps)),
         actualSetWeights: Array(actualSetsCount).fill(BigInt(parseInt(values.actualWeight))),
+        restTime: exercise.restTime || BigInt(60),
       };
     });
 
@@ -130,6 +133,17 @@ export default function CompilableAssignedWorkoutCard({
               <CardDescription>Assigned by your trainer</CardDescription>
             </div>
           </div>
+          {onStart && (
+            <Button
+              onClick={() => onStart(workout)}
+              variant="default"
+              size="sm"
+              className="gap-2"
+            >
+              <Play className="h-4 w-4" />
+              Start
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -151,6 +165,7 @@ export default function CompilableAssignedWorkoutCard({
         <div className="space-y-4">
           {workout.exercises.map((exercise, idx) => {
             const hasSetWeights = hasPerSetWeights(exercise.setWeights);
+            const restTimeDisplay = exercise.restTime ? `${Number(exercise.restTime)}s` : '60s';
             
             return (
               <div key={idx} className="rounded-lg border border-border/50 bg-card/50 p-4 space-y-3">
@@ -163,6 +178,7 @@ export default function CompilableAssignedWorkoutCard({
                     ) : (
                       <p>Weight: {exercise.setWeights?.[0] ? Number(exercise.setWeights[0]) : 0}kg</p>
                     )}
+                    <p className="text-xs">Rest: {restTimeDisplay}</p>
                   </div>
                 </div>
 

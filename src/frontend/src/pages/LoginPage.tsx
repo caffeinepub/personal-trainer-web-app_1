@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dumbbell, Lock, AlertCircle, Users } from 'lucide-react';
+import { Dumbbell, Lock, AlertCircle, Users, Loader2 } from 'lucide-react';
+import { extractErrorMessage, mapTrainerAuthError } from '../utils/trainerAuthErrors';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -16,68 +17,27 @@ interface LoginPageProps {
 export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
 
   const loginMutation = useMutation({
     mutationFn: async (pwd: string) => {
-      if (!actor) throw new Error('Backend non disponibile');
-      await actor.authenticateTrainer(pwd);
+      if (!actor) {
+        throw new Error('SERVICE_UNAVAILABLE');
+      }
+      // Normalize the password by trimming whitespace
+      const normalizedPwd = pwd.trim();
+      await actor.authenticateTrainer(normalizedPwd);
     },
     onSuccess: () => {
       setError('');
       onLoginSuccess();
     },
-    onError: (err: any) => {
-      // Extract error message from backend trap
-      let rawError = '';
+    onError: (err: unknown) => {
+      // Extract the raw error message
+      const rawError = extractErrorMessage(err);
       
-      if (err?.message) {
-        rawError = err.message;
-      } else if (typeof err === 'string') {
-        rawError = err;
-      } else if (err?.toString && typeof err.toString === 'function') {
-        const errStr = err.toString();
-        // Extract message from "Error: Reject text" format
-        if (errStr.includes('Reject text')) {
-          const match = errStr.match(/Reject text:\s*(.+?)(?:\n|$)/);
-          if (match && match[1]) {
-            rawError = match[1].trim();
-          }
-        } else if (errStr.startsWith('Error: ')) {
-          rawError = errStr.substring(7);
-        } else {
-          rawError = errStr;
-        }
-      }
-
-      // Map backend errors to user-friendly English messages
-      let userMessage = 'The access code you entered is incorrect. Please try again.';
-
-      const lowerError = rawError.toLowerCase();
-      
-      // Authorization/permission errors
-      if (lowerError.includes('unauthorized') || 
-          lowerError.includes('only admins') || 
-          lowerError.includes('assign user roles')) {
-        userMessage = 'Access denied. Please check your access code and try again.';
-      }
-      // Wrong password (Italian backend message)
-      else if (lowerError.includes('password') && 
-               (lowerError.includes('non è corretta') || lowerError.includes('incorrect'))) {
-        userMessage = 'The access code you entered is incorrect. Please try again.';
-      }
-      // Backend unavailable
-      else if (lowerError.includes('backend non disponibile') || 
-               lowerError.includes('backend') || 
-               lowerError.includes('not available')) {
-        userMessage = 'Service temporarily unavailable. Please try again in a moment.';
-      }
-      // Generic authentication failure
-      else if (rawError && rawError.trim() !== '') {
-        // If we have a specific error but it doesn't match known patterns,
-        // still show a generic friendly message
-        userMessage = 'Unable to authenticate. Please verify your access code.';
-      }
+      // Map to user-friendly message
+      const userMessage = mapTrainerAuthError(rawError);
       
       setError(userMessage);
     }
@@ -85,8 +45,17 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear any previous errors
     setError('');
     
+    // Check if actor is available
+    if (!actor) {
+      setError('Service is not available. Please wait a moment and try again.');
+      return;
+    }
+    
+    // Validate input
     if (!password.trim()) {
       setError('Please enter your access code to continue.');
       return;
@@ -94,6 +63,10 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
 
     loginMutation.mutate(password);
   };
+
+  // Determine if the form should be disabled
+  const isFormDisabled = isFetching || !actor || loginMutation.isPending;
+  const isInitializing = isFetching || !actor;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -117,26 +90,33 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-accent/20">
                 <Lock className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-bold">Area Trainer</CardTitle>
+              <CardTitle className="text-2xl font-bold">Trainer Area</CardTitle>
               <CardDescription className="text-base">
-                Inserisci il codice di accesso per continuare
+                Enter your access code to continue
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="password">Codice di Accesso</Label>
+                  <Label htmlFor="password">Access Code</Label>
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Inserisci il codice"
+                    placeholder="Enter your code"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    disabled={loginMutation.isPending}
+                    disabled={isFormDisabled}
                     className="h-11"
                     autoFocus
                   />
                 </div>
+
+                {isInitializing && !error && (
+                  <Alert className="animate-in fade-in-50">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AlertDescription>Connecting to service...</AlertDescription>
+                  </Alert>
+                )}
 
                 {error && (
                   <Alert variant="destructive" className="animate-in fade-in-50">
@@ -148,15 +128,20 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
                 <Button
                   type="submit"
                   className="w-full h-11 text-base font-semibold"
-                  disabled={loginMutation.isPending}
+                  disabled={isFormDisabled}
                 >
                   {loginMutation.isPending ? (
                     <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                      Verifica in corso...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : isInitializing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Initializing...
                     </>
                   ) : (
-                    'Accedi come Trainer'
+                    'Login as Trainer'
                   )}
                 </Button>
 
@@ -165,7 +150,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
                     <span className="w-full border-t border-border/50" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">oppure</span>
+                    <span className="bg-card px-2 text-muted-foreground">or</span>
                   </div>
                 </div>
 
@@ -174,9 +159,10 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
                   variant="outline"
                   className="w-full h-11 text-base font-semibold gap-2"
                   onClick={onNavigateToClientLogin}
+                  disabled={isFormDisabled}
                 >
                   <Users className="h-4 w-4" />
-                  Accedi come Cliente
+                  Login as Client
                 </Button>
               </form>
             </CardContent>
@@ -187,7 +173,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
       {/* Footer */}
       <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          © 2025. Built with love using{' '}
+          © 2026. Built with love using{' '}
           <a
             href="https://caffeine.ai"
             target="_blank"

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuthenticateAdmin } from '../hooks/useQueries';
@@ -13,10 +11,7 @@ interface AdminLoginPageProps {
   onBack: () => void;
 }
 
-const CORRECT_ADMIN_CODE = '9876';
-
 export default function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) {
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const authenticateAdminMutation = useAuthenticateAdmin();
@@ -25,19 +20,8 @@ export default function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPag
     e.preventDefault();
     setError('');
 
-    if (!password.trim()) {
-      setError('Please enter the admin access code');
-      return;
-    }
-
-    // Client-side validation for admin code
-    if (password.trim() !== CORRECT_ADMIN_CODE) {
-      setError('Incorrect admin access code. Please verify your credentials.');
-      return;
-    }
-
     try {
-      await authenticateAdminMutation.mutateAsync(password.trim());
+      await authenticateAdminMutation.mutateAsync();
       onLoginSuccess();
     } catch (err: any) {
       const errorMessage = normalizeError(err);
@@ -55,7 +39,7 @@ export default function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPag
             </div>
             <CardTitle className="text-2xl font-bold">Admin Access</CardTitle>
             <CardDescription>
-              Enter admin credentials to access the management dashboard
+              Click below to access the management dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -66,19 +50,6 @@ export default function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPag
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Admin Access Code</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter admin access code"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={authenticateAdminMutation.isPending}
-                  className="h-11"
-                />
-              </div>
 
               <Button
                 type="submit"

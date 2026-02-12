@@ -1,52 +1,57 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Admin dashboard personnel list (first/last name + PT code) and admin code validation",
+  "title": "Restore original white + beige/brown light theme and disable dark styling",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Display a personnel list on the admin dashboard with First name, Last name, and PT code using `getAdminOverview()` data, handling missing identity safely.",
+      "id": "REQ-1",
+      "summary": "Restore the original light theme palette (white background with beige/brown accents) via theme tokens so all Tailwind/shadcn styling reflects it consistently.",
       "acceptanceCriteria": [
-        "AdminDashboardPage renders a clear personnel section/list where each trainer row shows First name, Last name, and PT code in English labels.",
-        "If a trainer identity is missing, the UI shows a safe placeholder (e.g., \"Not set\") instead of crashing or rendering `undefined`.",
-        "Existing admin dashboard functionality (loading state, error state, existing trainer/client overview display) continues to work."
+        "The app background renders as white (or near-white) across all pages (trainer, client, admin) without any dark/black theme appearance.",
+        "Primary/accent UI elements (e.g., buttons, icons, gradient badges) use a beige/brown palette rather than blue/purple or dark-mode colors.",
+        "Theme tokens in `frontend/src/index.css` are updated so Tailwind/shadcn components consistently reflect the white + beige/brown palette (background, primary, secondary, muted, accent, border, ring)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/backend.d.ts",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Update the `AdminTrainerOverview` TypeScript type to include trainer identity fields (first name, last name) as optional fields so the admin UI can consume the enhanced `getAdminOverview()` response safely."
+          "description": "Update the light theme CSS variables to a white background with beige/brown (light brown) accents, ensuring key tokens (background/foreground/card/popover/primary/secondary/muted/accent/border/input/ring and any chart tokens used in gradients) align to the restored palette and propagate through Tailwind/shadcn token usage."
         },
         {
-          "path": "frontend/src/components/admin/PersonnelTable.tsx",
-          "operation": "create",
-          "description": "Create a reusable personnel list/table component that renders rows with English column labels (First name, Last name, PT code) and uses safe placeholders (e.g., \"Not set\") when identity fields are missing. Use shadcn-ui table primitives (read-only) for consistent styling; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/pages/AdminDashboardPage.tsx",
+          "path": "frontend/index.css",
           "operation": "modify",
-          "description": "Wire the new personnel section into the admin dashboard by importing and rendering `PersonnelTable` with the `useGetAdminOverview()` data, ensuring loading/error/empty states remain intact and the existing trainers/clients overview continues to work. Use shadcn-ui components (read-only) for layout as needed; verify the component's usage instructions before implementing."
+          "description": "Align the root-level Tailwind theme variable definitions with the restored white + beige/brown palette to avoid inconsistent token sources during build/dev, keeping background near-white and primary/accent in beige/brown."
         }
       ]
     },
     {
-      "id": "REQ-3",
-      "summary": "Keep admin access restricted to code \"9876\" and show a clear English error for incorrect codes in the admin login flow.",
+      "id": "REQ-2",
+      "summary": "Eliminate remaining dark-theme styling so the UI cannot visually switch to a dark/black palette (including under OS dark mode).",
       "acceptanceCriteria": [
-        "Entering \"9876\" in the AdminLoginPage successfully navigates to the admin dashboard.",
-        "Entering any other code keeps the user on the admin login page and displays an English error message.",
-        "After successful admin login, admin-only queries (e.g., admin overview) load without authorization errors."
+        "With OS-level dark mode enabled, the app still renders with the same white + beige/brown palette.",
+        "There are no pages/components that render with dark background/foreground tokens due to a `.dark` class being applied or dark variables being active.",
+        "No changes are required to any backend canisters or API behavior to achieve this."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminLoginPage.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Add client-side validation to only attempt admin authentication when the entered access code equals \"9876\"; otherwise show a clear English error message and do not navigate. Ensure the existing mutation-driven loading UX remains intact. Use shadcn-ui form components (read-only) without modifying them; verify the component's usage instructions before implementing."
+          "description": "Neutralize dark-mode styling by removing or overriding the `.dark` variable block so it no longer defines a dark palette (set `.dark` variables to match `:root`), and ensure `color-scheme: light only` remains enforced for html/body so OS dark mode does not alter form controls or UA styling."
         },
         {
-          "path": "frontend/src/utils/userFacingErrors.ts",
+          "path": "frontend/index.css",
           "operation": "modify",
-          "description": "Ensure backend admin-auth failures and admin-authorization failures normalize to clear, deterministic English messages (including incorrect code), so the login flow and subsequent admin-only data loads surface understandable errors."
+          "description": "Remove or neutralize the `.dark` theme variable overrides in this global stylesheet as well, preventing any dark token activation if a `.dark` class appears anywhere in the DOM."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Harden light-only rendering by configuring the existing `next-themes` ThemeProvider usage to fully ignore system theme changes (keep `forcedTheme=\"light\"` and disable system-driven switching), and add a small runtime guard that removes any accidental `dark` class from the root element on load."
+        },
+        {
+          "path": "frontend/index.html",
+          "operation": "modify",
+          "description": "Reinforce light-only behavior at the document level by ensuring the meta `color-scheme` remains `light only` and (if needed) adding a default light class/attribute to reduce any chance of dark UA styling when OS dark mode is enabled."
         }
       ]
     }

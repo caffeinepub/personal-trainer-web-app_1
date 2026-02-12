@@ -196,7 +196,7 @@ export interface backendInterface {
     addExercisePerformance(username: string, exercise: Exercise, date: string): Promise<void>;
     addWorkoutProgress(username: string, progress: WorkoutProgress): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    authenticateAdmin(password: string): Promise<void>;
+    authenticateAdmin(): Promise<void>;
     authenticateClient(username: string, codicePT: string): Promise<void>;
     authenticateTrainer(password: string): Promise<bigint>;
     createBooking(booking: BookingUpdate): Promise<bigint>;
@@ -304,17 +304,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async authenticateAdmin(arg0: string): Promise<void> {
+    async authenticateAdmin(): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.authenticateAdmin(arg0);
+                const result = await this.actor.authenticateAdmin();
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.authenticateAdmin(arg0);
+            const result = await this.actor.authenticateAdmin();
             return result;
         }
     }

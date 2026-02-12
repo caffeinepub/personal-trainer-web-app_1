@@ -3,22 +3,24 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "La palette colori attuale non corrisponde a quella originale (richiesto bianco e marroncino/beige)."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-admin-dashboard-ui-to-display-the-personnel-list-with-columns-for-first-name-last-name-and-pt-code-using-the-data-returned-by-getadminoverview",
-      "title": "Update the admin dashboard UI to display the personnel list with columns for First name, Last name, and PT code, using the data returned by `getAdminOverview()`.",
+      "id": "feature-restore-the-ui-color-palette-to-the-original-light-theme-using-a-white-background-and-beige-brown-light-brown-accents-across-the-app",
+      "title": "Restore the UI color palette to the original light theme using a white background and beige/brown (light brown) accents across the app.",
       "reqIds": [
-        "REQ-2"
+        "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-admin-login-flow-continues-to-grant-access-only-when-the-admin-access-code-equals-9876-and-show-a-clear-english-error-message-for-incorrect-codes",
-      "title": "Ensure the admin login flow continues to grant access only when the admin access code equals \"9876\", and show a clear English error message for incorrect codes.",
+      "id": "feature-remove-or-neutralize-any-remaining-dark-theme-styling-so-that-the-app-cannot-visually-switch-to-a-dark-black-palette-including-when-the-os-is-in-dark-mode",
+      "title": "Remove or neutralize any remaining dark-theme styling so that the app cannot visually switch to a dark/black palette (including when the OS is in dark mode).",
       "reqIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "version": 1
     }
@@ -26,20 +28,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Admin page: allow access via code 9876 and display personnel list with Nome, Cognome, and Codice PT",
+      "summary": "Ripristinare la palette colori originale (bianco e marroncino/beige)",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Update the backend admin overview API so that, after authenticating as admin, the admin dashboard can fetch a list of all trainers (personnel) including each trainer's first name, last name, and PT code.",
-      "reqIds": [
-        "REQ-1"
-      ],
       "status": "pending"
     }
   ],
-  "projectName": "Admin dashboard: login with code 9876 and show personnel (first name, last name, PT code)",
+  "projectName": "Restore original white and beige/brown color palette",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

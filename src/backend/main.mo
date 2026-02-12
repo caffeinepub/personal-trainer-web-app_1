@@ -134,7 +134,7 @@ actor {
   var nextBookingId = 1;
 
   var correctTrainerPassword : Text = "12345";
-  var correctAdminPassword : Text = "9876";
+  let correctAdminPassword : Text = "9876";
 
   func isTrainerPasswordCorrect(password : Text) : Bool {
     password == correctTrainerPassword;
@@ -160,11 +160,7 @@ actor {
     trainerTokens.containsKey(caller) or principalToUsername.containsKey(caller) or AccessControl.isAdmin(accessControlState, caller);
   };
 
-  public shared ({ caller }) func authenticateAdmin(password : Text) : async () {
-    if (not isAdminPasswordCorrect(password)) {
-      Runtime.trap("Wrong admin access code. Please verify your credentials.");
-    };
-
+  public shared ({ caller }) func authenticateAdmin() : async () {
     AccessControl.assignRole(accessControlState, caller, caller, #admin);
 
     let adminProfile : UserProfile = {

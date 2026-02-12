@@ -28,15 +28,30 @@ export function useAuthenticateAdmin() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (password: string) => {
+    mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.authenticateAdmin(password);
+      return actor.authenticateAdmin();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
       queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
       queryClient.invalidateQueries({ queryKey: ['allTrainers'] });
+      queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
     },
+    retry: 1,
+  });
+}
+
+export function useIsCallerAdmin() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<boolean>({
+    queryKey: ['isCallerAdmin'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.isCallerAdmin();
+    },
+    enabled: !!actor && !isFetching,
     retry: 1,
   });
 }
@@ -212,13 +227,12 @@ export function useUpdateClientEmail() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['clientProfile', variables.username] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['clientInfo', variables.username] });
     },
     retry: 1,
   });
 }
 
-// Client Info (username, codicePT, emailOrNickname)
+// Client Info
 export function useGetClientInfo(username: string) {
   const { actor, isFetching } = useActor();
 
@@ -482,6 +496,20 @@ export function useCreateBooking() {
   });
 }
 
+export function useGetBookingsByDateRange(startTime: Time, endTime: Time) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Booking[]>({
+    queryKey: ['bookings', startTime.toString(), endTime.toString()],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getBookingsByDateRange(startTime, endTime);
+    },
+    enabled: !!actor && !isFetching,
+    retry: 1,
+  });
+}
+
 export function useUpdateBooking() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -510,20 +538,6 @@ export function useDeleteBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
-    retry: 1,
-  });
-}
-
-export function useGetBookingsByDateRange(startTime: Time, endTime: Time) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<Booking[]>({
-    queryKey: ['bookings', startTime.toString(), endTime.toString()],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getBookingsByDateRange(startTime, endTime);
-    },
-    enabled: !!actor && !isFetching,
     retry: 1,
   });
 }

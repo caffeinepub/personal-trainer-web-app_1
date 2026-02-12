@@ -109,7 +109,7 @@ export interface _SERVICE {
   'addExercisePerformance' : ActorMethod<[string, Exercise, string], undefined>,
   'addWorkoutProgress' : ActorMethod<[string, WorkoutProgress], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'authenticateAdmin' : ActorMethod<[string], undefined>,
+  'authenticateAdmin' : ActorMethod<[], undefined>,
   'authenticateClient' : ActorMethod<[string, string], undefined>,
   'authenticateTrainer' : ActorMethod<[string], bigint>,
   'createBooking' : ActorMethod<[BookingUpdate], bigint>,

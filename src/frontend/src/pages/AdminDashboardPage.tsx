@@ -1,10 +1,11 @@
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Shield, LogOut, Users, AlertCircle } from 'lucide-react';
-import { useGetAdminOverview, useGetAllTrainers } from '../hooks/useQueries';
+import { Shield, LogOut, Users, AlertCircle, XCircle } from 'lucide-react';
+import { useGetAdminOverview, useGetAllTrainers, useIsCallerAdmin } from '../hooks/useQueries';
 import { normalizeError } from '../utils/userFacingErrors';
 import PersonnelTable from '../components/admin/PersonnelTable';
 
@@ -13,8 +14,64 @@ interface AdminDashboardPageProps {
 }
 
 export default function AdminDashboardPage({ onLogout }: AdminDashboardPageProps) {
+  const { data: isAdmin, isLoading: isAdminLoading, isFetched: isAdminFetched, isError: isAdminError } = useIsCallerAdmin();
   const { data: overview, isLoading: overviewLoading, isError: overviewError, error: overviewErrorData } = useGetAdminOverview();
   const { data: trainers, isLoading: trainersLoading, isError: trainersError, error: trainersErrorData } = useGetAllTrainers();
+
+  // Check admin status and redirect if unauthorized (only after verification is complete)
+  useEffect(() => {
+    if (isAdminFetched && !isAdmin) {
+      // Not authorized, trigger logout
+      onLogout();
+    }
+  }, [isAdmin, isAdminFetched, onLogout]);
+
+  // Show loading while verifying admin status
+  if (isAdminLoading || !isAdminFetched) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-lg font-medium text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not admin
+  if (isAdminError || !isAdmin) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4">
+        <Card className="w-full max-w-md border-destructive/50 bg-card/80 backdrop-blur-sm shadow-xl">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+              <XCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Access Denied</CardTitle>
+            <CardDescription>
+              You do not have permission to access the admin dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Admin authentication required. Please log in with valid admin credentials.
+              </AlertDescription>
+            </Alert>
+            <Button
+              onClick={onLogout}
+              className="w-full"
+              variant="outline"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Return to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const isLoading = overviewLoading || trainersLoading;
   const isError = overviewError || trainersError;
@@ -114,141 +171,136 @@ export default function AdminDashboardPage({ onLogout }: AdminDashboardPageProps
             </div>
           )}
 
-          {/* Personnel Section */}
-          {isLoading ? (
-            <div className="mb-8">
+          {/* Loading State */}
+          {isLoading && (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="border-border/50 bg-card/80 backdrop-blur-sm">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-8 w-8 rounded-lg" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="mb-2 h-8 w-16" />
+                      <Skeleton className="h-3 w-32" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
               <Skeleton className="h-64 w-full" />
             </div>
-          ) : isError ? (
-            <div className="mb-8">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  {normalizeError(error)}
-                </AlertDescription>
-              </Alert>
-            </div>
-          ) : trainers ? (
-            <div className="mb-8">
-              <PersonnelTable trainers={trainers} />
-            </div>
-          ) : null}
+          )}
 
-          {/* Trainers List */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Trainers & Clients
-              </CardTitle>
-              <CardDescription>
-                Complete overview of all trainers and their associated clients
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : isError ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    {normalizeError(error)}
-                  </AlertDescription>
-                </Alert>
-              ) : !overview || overview.length === 0 ? (
-                <div className="py-12 text-center">
-                  <Users className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-                  <p className="text-lg font-medium text-muted-foreground">
-                    No trainers found
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    No trainers have registered yet
-                  </p>
-                </div>
-              ) : (
-                <Accordion type="multiple" className="w-full">
-                  {overview.map((trainer, index) => (
-                    <AccordionItem key={trainer.trainerPrincipal.toString()} value={`trainer-${index}`}>
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex w-full items-center justify-between pr-4 text-left">
-                          <div className="flex-1">
-                            <div className="font-semibold">
-                              Trainer #{index + 1}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              PT Code: {String(trainer.ptCode).padStart(5, '0')}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Users className="h-4 w-4" />
-                            <span>
-                              {trainer.clients.length} {trainer.clients.length === 1 ? 'client' : 'clients'}
-                            </span>
-                          </div>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-2 pt-2">
-                          <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
-                            <div className="mb-2 text-xs font-medium text-muted-foreground">
-                              Trainer Principal ID
-                            </div>
-                            <div className="break-all font-mono text-xs">
-                              {trainer.trainerPrincipal.toString()}
-                            </div>
-                          </div>
+          {/* Error State */}
+          {isError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {normalizeError(error)}
+              </AlertDescription>
+            </Alert>
+          )}
 
-                          {trainer.clients.length === 0 ? (
-                            <div className="rounded-lg border border-border/50 bg-muted/10 p-6 text-center">
-                              <p className="text-sm text-muted-foreground">
-                                No clients assigned to this trainer
+          {/* Trainers Overview */}
+          {!isLoading && !isError && overview && (
+            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Trainers & Clients</CardTitle>
+                <CardDescription>
+                  Detailed view of all trainers and their associated clients
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {overview.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Users className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+                    <p className="text-lg font-medium text-muted-foreground">
+                      No trainers registered yet
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Trainers will appear here once they register
+                    </p>
+                  </div>
+                ) : (
+                  <Accordion type="single" collapsible className="w-full">
+                    {overview.map((trainer, index) => (
+                      <AccordionItem key={trainer.trainerPrincipal.toString()} value={`trainer-${index}`}>
+                        <AccordionTrigger className="hover:no-underline">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
+                              <Shield className="h-5 w-5 text-primary-foreground" />
+                            </div>
+                            <div className="text-left">
+                              <div className="font-semibold">
+                                PT Code: {trainer.ptCode.toString()}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {trainer.clients.length} {trainer.clients.length === 1 ? 'client' : 'clients'}
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="rounded-lg border border-border/50 bg-muted/20 p-4">
+                            {trainer.clients.length === 0 ? (
+                              <p className="text-center text-sm text-muted-foreground">
+                                No clients registered for this trainer
                               </p>
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              <div className="text-sm font-medium">Clients:</div>
+                            ) : (
                               <div className="space-y-2">
                                 {trainer.clients.map((client) => (
                                   <div
                                     key={client.username}
-                                    className="rounded-lg border border-border/50 bg-background p-3"
+                                    className="flex items-center justify-between rounded-md border border-border/30 bg-card/50 p-3"
                                   >
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <div className="font-medium">{client.username}</div>
-                                        {client.emailOrNickname && (
-                                          <div className="text-sm text-muted-foreground">
-                                            {client.emailOrNickname}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {client.progressData.length} workouts logged
-                                      </div>
+                                    <div>
+                                      <div className="font-medium">{client.username}</div>
+                                      {client.emailOrNickname && (
+                                        <div className="text-sm text-muted-foreground">
+                                          {client.emailOrNickname}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {client.progressData.length} workout{client.progressData.length !== 1 ? 's' : ''}
                                     </div>
                                   </div>
                                 ))}
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              )}
-            </CardContent>
-          </Card>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Personnel Table */}
+          {!isLoading && !isError && trainers && trainers.length > 0 && (
+            <div className="mt-8">
+              <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle>Personnel Directory</CardTitle>
+                  <CardDescription>
+                    Complete list of registered trainers with their details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PersonnelTable trainers={trainers} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+      <footer className="border-t border-border/40 bg-card/50 py-6">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()}. Built with love using{' '}
           <a
             href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}

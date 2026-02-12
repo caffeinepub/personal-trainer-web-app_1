@@ -20,6 +20,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Remove any dark class that might have been added
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark');
+    }
+
     // Check if user is already authenticated from session storage
     const authType = sessionStorage.getItem('pt_auth_type');
     const storedUsername = sessionStorage.getItem('pt_username');
@@ -27,52 +32,56 @@ function App() {
     if (authType === 'trainer') {
       setUserType('trainer');
       setCurrentView('dashboard');
+      setIsLoading(false);
     } else if (authType === 'client' && storedUsername) {
       setUserType('client');
       setUsername(storedUsername);
       setCurrentView('dashboard');
+      setIsLoading(false);
     } else if (authType === 'admin') {
+      // For admin, just restore the session without backend verification
+      // The AdminDashboardPage will handle verification and show access denied if needed
       setUserType('admin');
       setCurrentView('admin-dashboard');
+      setIsLoading(false);
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
-  const handleTrainerLoginSuccess = () => {
-    sessionStorage.setItem('pt_auth_type', 'trainer');
+  const handleTrainerLogin = () => {
     setUserType('trainer');
     setCurrentView('dashboard');
+    sessionStorage.setItem('pt_auth_type', 'trainer');
   };
 
-  const handleClientLoginSuccess = (clientUsername: string) => {
-    sessionStorage.setItem('pt_auth_type', 'client');
-    sessionStorage.setItem('pt_username', clientUsername);
+  const handleClientLogin = (clientUsername: string) => {
     setUserType('client');
     setUsername(clientUsername);
     setCurrentView('dashboard');
+    sessionStorage.setItem('pt_auth_type', 'client');
+    sessionStorage.setItem('pt_username', clientUsername);
   };
 
-  const handleAdminLoginSuccess = () => {
-    sessionStorage.setItem('pt_auth_type', 'admin');
+  const handleAdminLogin = () => {
     setUserType('admin');
     setCurrentView('admin-dashboard');
+    sessionStorage.setItem('pt_auth_type', 'admin');
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('pt_auth_type');
-    sessionStorage.removeItem('pt_username');
     setUserType(null);
     setUsername('');
     setCurrentView('trainer-login');
-    // Clear all cached queries
+    sessionStorage.removeItem('pt_auth_type');
+    sessionStorage.removeItem('pt_username');
     queryClient.clear();
   };
 
   const handleAdminLogout = () => {
-    sessionStorage.removeItem('pt_auth_type');
     setUserType(null);
     setCurrentView('trainer-login');
-    // Clear all cached queries
+    sessionStorage.removeItem('pt_auth_type');
     queryClient.clear();
   };
 
@@ -80,75 +89,68 @@ function App() {
     setCurrentView('client-login');
   };
 
-  const handleNavigateToTrainerLogin = () => {
-    setCurrentView('trainer-login');
-  };
-
   const handleNavigateToRegistration = () => {
     setCurrentView('registration');
+  };
+
+  const handleNavigateToTrainerLogin = () => {
+    setCurrentView('trainer-login');
   };
 
   const handleNavigateToAdminLogin = () => {
     setCurrentView('admin-login');
   };
 
-  const handleRegistrationSuccess = (clientUsername: string) => {
-    sessionStorage.setItem('pt_auth_type', 'client');
-    sessionStorage.setItem('pt_username', clientUsername);
-    setUserType('client');
-    setUsername(clientUsername);
-    setCurrentView('dashboard');
-  };
-
   if (isLoading) {
     return (
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-lg font-medium text-muted-foreground">Loading...</p>
+          </div>
         </div>
       </ThemeProvider>
     );
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <div className="min-h-screen bg-background">
-        {currentView === 'dashboard' && userType === 'trainer' && (
-          <DashboardPage onLogout={handleLogout} />
-        )}
-        {currentView === 'dashboard' && userType === 'client' && (
-          <ClientDashboardPage username={username} onLogout={handleLogout} />
-        )}
-        {currentView === 'admin-dashboard' && (
-          <AdminDashboardPage onLogout={handleAdminLogout} />
-        )}
-        {currentView === 'admin-login' && (
-          <AdminLoginPage
-            onLoginSuccess={handleAdminLoginSuccess}
-            onBack={handleNavigateToTrainerLogin}
-          />
-        )}
-        {currentView === 'trainer-login' && (
-          <LoginPage
-            onLoginSuccess={handleTrainerLoginSuccess}
-            onNavigateToClientLogin={handleNavigateToClientLogin}
-            onNavigateToAdmin={handleNavigateToAdminLogin}
-          />
-        )}
-        {currentView === 'client-login' && (
-          <ClientLoginPage
-            onLoginSuccess={handleClientLoginSuccess}
-            onNavigateToRegistration={handleNavigateToRegistration}
-            onNavigateToTrainerLogin={handleNavigateToTrainerLogin}
-          />
-        )}
-        {currentView === 'registration' && (
-          <RegistrationPage
-            onRegistrationSuccess={handleRegistrationSuccess}
-            onNavigateToLogin={handleNavigateToClientLogin}
-          />
-        )}
-      </div>
+    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
+      {currentView === 'trainer-login' && (
+        <LoginPage
+          onLoginSuccess={handleTrainerLogin}
+          onNavigateToClientLogin={handleNavigateToClientLogin}
+          onNavigateToAdmin={handleNavigateToAdminLogin}
+        />
+      )}
+      {currentView === 'client-login' && (
+        <ClientLoginPage
+          onLoginSuccess={handleClientLogin}
+          onNavigateToRegistration={handleNavigateToRegistration}
+          onNavigateToTrainerLogin={handleNavigateToTrainerLogin}
+        />
+      )}
+      {currentView === 'registration' && (
+        <RegistrationPage
+          onRegistrationSuccess={handleClientLogin}
+          onNavigateToLogin={handleNavigateToTrainerLogin}
+        />
+      )}
+      {currentView === 'dashboard' && userType === 'trainer' && (
+        <DashboardPage onLogout={handleLogout} />
+      )}
+      {currentView === 'dashboard' && userType === 'client' && (
+        <ClientDashboardPage username={username} onLogout={handleLogout} />
+      )}
+      {currentView === 'admin-login' && (
+        <AdminLoginPage
+          onLoginSuccess={handleAdminLogin}
+          onBack={handleNavigateToTrainerLogin}
+        />
+      )}
+      {currentView === 'admin-dashboard' && userType === 'admin' && (
+        <AdminDashboardPage onLogout={handleAdminLogout} />
+      )}
     </ThemeProvider>
   );
 }

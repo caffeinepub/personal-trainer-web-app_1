@@ -2,11 +2,31 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-admin-dashboard-ui-to-display-the-personnel-list-with-columns-for-first-name-last-name-and-pt-code-using-the-data-returned-by-getadminoverview",
-      "featureTitle": "Update the admin dashboard UI to display the personnel list with columns for First name, Last name, and PT code, using the data returned by `getAdminOverview()`.",
+      "featureId": "feature-restore-the-ui-color-palette-to-the-original-light-theme-using-a-white-background-and-beige-brown-light-brown-accents-across-the-app",
+      "featureTitle": "Restore the UI color palette to the original light theme using a white background and beige/brown (light brown) accents across the app.",
       "files": [
-        "frontend/src/components/admin/PersonnelTable.tsx",
-        "frontend/src/pages/AdminDashboardPage.tsx"
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-remove-or-neutralize-any-remaining-dark-theme-styling-so-that-the-app-cannot-visually-switch-to-a-dark-black-palette-including-when-the-os-is-in-dark-mode",
+      "featureTitle": "Remove or neutralize any remaining dark-theme styling so that the app cannot visually switch to a dark/black palette (including when the OS is in dark mode).",
+      "files": [
+        "frontend/index.html",
+        "frontend/src/App.tsx",
+        "frontend/src/index.css"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -18,26 +38,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-the-admin-login-flow-continues-to-grant-access-only-when-the-admin-access-code-equals-9876-and-show-a-clear-english-error-message-for-incorrect-codes",
-      "featureTitle": "Ensure the admin login flow continues to grant access only when the admin access code equals \"9876\", and show a clear English error message for incorrect codes.",
-      "files": [
-        "frontend/src/pages/AdminLoginPage.tsx",
-        "frontend/src/utils/userFacingErrors.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "authorization@4.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }

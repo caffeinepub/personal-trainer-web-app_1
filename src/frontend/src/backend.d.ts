@@ -59,8 +59,6 @@ export interface AdminTrainerOverview {
     trainerPrincipal: Principal;
     ptCode: bigint;
     clients: Array<Client>;
-    firstName?: string;
-    lastName?: string;
 }
 export interface ClientProfile {
     username: string;
@@ -115,7 +113,7 @@ export interface backendInterface {
     addExercisePerformance(username: string, exercise: Exercise, date: string): Promise<void>;
     addWorkoutProgress(username: string, progress: WorkoutProgress): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    authenticateAdmin(password: string): Promise<void>;
+    authenticateAdmin(): Promise<void>;
     authenticateClient(username: string, codicePT: string): Promise<void>;
     authenticateTrainer(password: string): Promise<bigint>;
     createBooking(booking: BookingUpdate): Promise<bigint>;

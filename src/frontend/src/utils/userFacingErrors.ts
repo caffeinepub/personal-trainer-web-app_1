@@ -11,6 +11,34 @@ export function normalizeError(error: unknown): string {
     return 'Service is temporarily unavailable. Please try again in a moment.';
   }
 
+  // Admin authentication errors
+  if (rawMessage.includes('Wrong admin access code')) {
+    return 'Incorrect admin access code. Please verify your credentials.';
+  }
+
+  if (rawMessage.includes('Admin access required')) {
+    return 'Admin access required. Please log in as an administrator.';
+  }
+
+  // Admin authorization errors
+  if (rawMessage.includes('Unauthorized: Admin access required') || 
+      rawMessage.includes('Unauthorized: Only admins')) {
+    return 'Admin access required. Please log in as an administrator.';
+  }
+
+  // Trainer identity errors
+  if (rawMessage.includes('Trainer identity already exists')) {
+    return 'Your name has already been registered. You cannot change it at this time.';
+  }
+
+  if (rawMessage.includes('No PT code found') || rawMessage.includes('authenticate first')) {
+    return 'Please log in again to register your name.';
+  }
+
+  if (rawMessage.includes('Only authenticated trainers')) {
+    return 'Only trainers can register their name.';
+  }
+
   // Authentication errors
   if (rawMessage.includes('Unauthorized') || rawMessage.includes('authenticated')) {
     return 'You are not authorized to perform this action. Please log in again.';

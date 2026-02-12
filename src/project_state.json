@@ -7,18 +7,18 @@
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-update-the-app-light-theme-to-use-a-beige-background-with-black-or-near-black-foreground-text-by-adjusting-the-light-mode-css-theme-tokens-in-frontend-src-index-css-the-root-block-ensure-the-main-surfaces-background-card-popover-sidebar-are-beige-toned-and-that-text-tokens-foreground-card-foreground-popover-foreground-sidebar-foreground-resolve-to-black-near-black-with-accessible-contrast",
-      "title": "Update the app light theme to use a beige background with black (or near-black) foreground text by adjusting the light-mode CSS theme tokens in `frontend/src/index.css` (the `:root` block). Ensure the main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) are beige-toned and that text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) resolve to black/near-black with accessible contrast.",
+      "id": "feature-update-the-admin-dashboard-ui-to-display-the-personnel-list-with-columns-for-first-name-last-name-and-pt-code-using-the-data-returned-by-getadminoverview",
+      "title": "Update the admin dashboard UI to display the personnel list with columns for First name, Last name, and PT code, using the data returned by `getAdminOverview()`.",
       "reqIds": [
-        "REQ-1"
+        "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-align-light-mode-interactive-accent-tokens-in-frontend-src-index-css-with-the-beige-black-theme-so-buttons-borders-inputs-rings-and-muted-secondary-surfaces-remain-consistent-and-readable-e-g-primary-primary-foreground-secondary-muted-accent-border-input-ring-keep-the-existing-dark-theme-tokens-unchanged-unless-they-cause-readability-issues-after-the-light-theme-update",
-      "title": "Align light-mode interactive/accent tokens in `frontend/src/index.css` with the beige/black theme so buttons, borders, inputs, rings, and muted/secondary surfaces remain consistent and readable (e.g., `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`). Keep the existing dark theme tokens unchanged unless they cause readability issues after the light-theme update.",
+      "id": "feature-ensure-the-admin-login-flow-continues-to-grant-access-only-when-the-admin-access-code-equals-9876-and-show-a-clear-english-error-message-for-incorrect-codes",
+      "title": "Ensure the admin login flow continues to grant access only when the admin access code equals \"9876\", and show a clear English error message for incorrect codes.",
       "reqIds": [
-        "REQ-2"
+        "REQ-3"
       ],
       "version": 1
     }
@@ -26,12 +26,20 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Update interface colors to beige with black (instead of all-white)",
+      "summary": "Admin page: allow access via code 9876 and display personnel list with Nome, Cognome, and Codice PT",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Update the backend admin overview API so that, after authenticating as admin, the admin dashboard can fetch a list of all trainers (personnel) including each trainer's first name, last name, and PT code.",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Update light theme to beige background with black text",
+  "projectName": "Admin dashboard: login with code 9876 and show personnel (first name, last name, PT code)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

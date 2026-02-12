@@ -1,45 +1,68 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T11:58:46.925Z",
+  "generatedAt": "2026-02-12T11:44:06.357Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
+    "total": 3,
     "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the app light theme to use a beige background with black (or near-black) foreground text by adjusting the light-mode CSS theme tokens in `frontend/src/index.css` (the `:root` block). Ensure the main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) are beige-toned and that text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) resolve to black/near-black with accessible contrast.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/index.css"
-        ],
-        "matchedFiles": [
-          "frontend/src/index.css"
-        ]
+        "summary": "Update the backend admin overview API so that, after authenticating as admin, the admin dashboard can fetch a list of all trainers (personnel) including each trainer's first name, last name, and PT code.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Align light-mode interactive/accent tokens in `frontend/src/index.css` with the beige/black theme so buttons, borders, inputs, rings, and muted/secondary surfaces remain consistent and readable (e.g., `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`). Keep the existing dark theme tokens unchanged unless they cause readability issues after the light-theme update.",
+        "summary": "Update the admin dashboard UI to display the personnel list with columns for First name, Last name, and PT code, using the data returned by `getAdminOverview()`.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/index.css"
+          "frontend/src/backend.d.ts",
+          "frontend/src/components/admin/PersonnelTable.tsx",
+          "frontend/src/pages/AdminDashboardPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/index.css"
+          "frontend/src/backend.d.ts",
+          "frontend/src/components/admin/PersonnelTable.tsx",
+          "frontend/src/pages/AdminDashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Ensure the admin login flow continues to grant access only when the admin access code equals \"9876\", and show a clear English error message for incorrect codes.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/AdminLoginPage.tsx",
+          "frontend/src/utils/userFacingErrors.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/AdminLoginPage.tsx",
+          "frontend/src/utils/userFacingErrors.ts"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/index.css",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/admin/PersonnelTable.tsx",
+    "frontend/src/components/trainer/WorkoutBuilder.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminDashboardPage.tsx",
+    "frontend/src/pages/AdminLoginPage.tsx",
+    "frontend/src/utils/userFacingErrors.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

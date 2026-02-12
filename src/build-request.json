@@ -1,52 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Update light theme to beige background with black text",
+  "title": "Admin dashboard: login with code 9876 and show personnel (first name, last name, PT code)",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the app light theme to use a beige background with black (or near-black) foreground text by adjusting the light-mode CSS theme tokens in `frontend/src/index.css` (the `:root` block). Ensure the main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) are beige-toned and that text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) resolve to black/near-black with accessible contrast.",
-      "target": "frontend",
+      "text": "Update the backend admin overview API so that, after authenticating as admin, the admin dashboard can fetch a list of all trainers (personnel) including each trainer's first name, last name, and PT code.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "recent-messages"
         ],
         "quotes": [
-          "e il beije col nero"
+          "ora vorrei che nella pagina admin accedendo tramite codice 9876 si possa visulizzare il personal con nome, cognome e codice PT"
         ]
       },
       "acceptanceCriteria": [
-        "In light mode, the page background and primary surfaces render in a beige tone (not pure white).",
-        "In light mode, default text renders as black or near-black across pages (login, dashboard, client dashboard) with good readability.",
-        "No UI areas remain unintentionally pure white due to theme tokens (except where explicitly intended, e.g., images)."
+        "Calling `authenticateAdmin(\"9876\")` succeeds and marks the caller as admin as it does today.",
+        "`getAdminOverview()` returns, for each trainer, the trainer PT code plus the trainer identity fields (first name and last name) sourced from stored trainer identity data.",
+        "If a trainer has not registered an identity yet, the response handles it safely (e.g., optional fields / empty values) and does not trap.",
+        "`getAdminOverview()` continues to be admin-protected (non-admin callers cannot access it)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Align light-mode interactive/accent tokens in `frontend/src/index.css` with the beige/black theme so buttons, borders, inputs, rings, and muted/secondary surfaces remain consistent and readable (e.g., `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`). Keep the existing dark theme tokens unchanged unless they cause readability issues after the light-theme update.",
+      "text": "Update the admin dashboard UI to display the personnel list with columns for First name, Last name, and PT code, using the data returned by `getAdminOverview()`.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "recent-messages"
         ],
         "quotes": [
-          "e il beije col nero"
+          "ora vorrei che nella pagina admin accedendo tramite codice 9876 si possa visulizzare il personal con nome, cognome e codice PT"
         ]
       },
       "acceptanceCriteria": [
-        "Primary buttons and their text have clear contrast in light mode (no low-contrast beige-on-beige or black-on-black combinations).",
-        "Borders/inputs are visible but subtle on beige backgrounds in light mode.",
-        "Dark mode appearance remains functionally unchanged (no regressions in readability or broken colors)."
+        "AdminDashboardPage renders a clear personnel section/list where each trainer row shows First name, Last name, and PT code in English labels.",
+        "If a trainer identity is missing, the UI shows a safe placeholder (e.g., \"Not set\") instead of crashing or rendering `undefined`.",
+        "Existing admin dashboard functionality (loading state, error state, existing trainer/client overview display) continues to work."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure the admin login flow continues to grant access only when the admin access code equals \"9876\", and show a clear English error message for incorrect codes.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "recent-messages"
+        ],
+        "quotes": [
+          "accedendo tramite codice 9876"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Entering \"9876\" in the AdminLoginPage successfully navigates to the admin dashboard.",
+        "Entering any other code keeps the user on the admin login page and displays an English error message.",
+        "After successful admin login, admin-only queries (e.g., admin overview) load without authorization errors."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under `frontend/src/components/ui` (compose them instead if needed).",
-    "Do not edit any paths listed in `frontend.immutablePaths` in SYSTEM_CONTEXT (including `frontend/src/main.tsx`, `frontend/src/hooks/useInternetIdentity.ts(x)`, and `frontend/src/hooks/useActor.ts`)."
+    "Do not edit any files under `frontend/src/components/ui` (shadcn components are read-only).",
+    "Do not edit immutable hook bootstrap files listed in SYSTEM_CONTEXT (compose around them instead).",
+    "Backend must remain a single Motoko actor in `backend/main.mo`; add `backend/migration.mo` only if state upgrades require it."
   ],
   "nonGoals": [
-    "Adding new application features beyond the color/theme update.",
-    "Changing authentication flow or backend logic."
+    "Do not add third-party authentication providers (only existing admin code flow).",
+    "Do not add new roles beyond the existing admin/trainer/client roles.",
+    "Do not redesign trainer/client dashboards beyond what is required to expose trainer identity data to the admin view."
   ],
   "imageRequirements": {
     "required": [],

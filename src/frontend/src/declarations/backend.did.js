@@ -34,9 +34,34 @@ export const BookingUpdate = IDL.Record({
   'isConfirmed' : IDL.Bool,
   'dateTime' : Time,
 });
+export const ExercisePerformance = IDL.Record({
+  'date' : IDL.Text,
+  'exercise' : Exercise,
+});
 export const BodyWeightEntry = IDL.Record({
   'weight' : IDL.Nat,
   'date' : IDL.Text,
+});
+export const Client = IDL.Record({
+  'height' : IDL.Opt(IDL.Nat),
+  'principal' : IDL.Opt(IDL.Principal),
+  'exercisePerformanceHistory' : IDL.Vec(ExercisePerformance),
+  'username' : IDL.Text,
+  'bodyWeightHistory' : IDL.Vec(BodyWeightEntry),
+  'trainerCode' : IDL.Text,
+  'progressData' : IDL.Vec(WorkoutProgress),
+  'emailOrNickname' : IDL.Opt(IDL.Text),
+  'codicePT' : IDL.Text,
+});
+export const AdminTrainerOverview = IDL.Record({
+  'trainerPrincipal' : IDL.Principal,
+  'ptCode' : IDL.Nat,
+  'clients' : IDL.Vec(Client),
+});
+export const TrainerDetails = IDL.Record({
+  'ptCode' : IDL.Nat,
+  'lastName' : IDL.Text,
+  'firstName' : IDL.Text,
 });
 export const Booking = IDL.Record({
   'id' : IDL.Nat,
@@ -57,10 +82,6 @@ export const UserProfile = IDL.Record({
 export const ClientProfile = IDL.Record({
   'username' : IDL.Text,
   'emailOrNickname' : IDL.Opt(IDL.Text),
-});
-export const ExercisePerformance = IDL.Record({
-  'date' : IDL.Text,
-  'exercise' : Exercise,
 });
 export const ExerciseLog = IDL.Record({
   'actualRepetitions' : IDL.Nat,
@@ -95,6 +116,7 @@ export const idlService = IDL.Service({
   'addExercisePerformance' : IDL.Func([IDL.Text, Exercise, IDL.Text], [], []),
   'addWorkoutProgress' : IDL.Func([IDL.Text, WorkoutProgress], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'authenticateAdmin' : IDL.Func([IDL.Text], [], []),
   'authenticateClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'authenticateTrainer' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'createBooking' : IDL.Func([BookingUpdate], [IDL.Nat], []),
@@ -109,6 +131,8 @@ export const idlService = IDL.Service({
       [],
     ),
   'deleteBooking' : IDL.Func([IDL.Nat], [], []),
+  'getAdminOverview' : IDL.Func([], [IDL.Vec(AdminTrainerOverview)], ['query']),
+  'getAllTrainers' : IDL.Func([], [IDL.Vec(TrainerDetails)], ['query']),
   'getBodyWeightHistory' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(BodyWeightEntry)],
@@ -162,6 +186,7 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'registerTrainerIdentity' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'requestAppointment' : IDL.Func(
       [IDL.Text, IDL.Text, Time, IDL.Nat, IDL.Text],
       [IDL.Nat],
@@ -204,7 +229,32 @@ export const idlFactory = ({ IDL }) => {
     'isConfirmed' : IDL.Bool,
     'dateTime' : Time,
   });
+  const ExercisePerformance = IDL.Record({
+    'date' : IDL.Text,
+    'exercise' : Exercise,
+  });
   const BodyWeightEntry = IDL.Record({ 'weight' : IDL.Nat, 'date' : IDL.Text });
+  const Client = IDL.Record({
+    'height' : IDL.Opt(IDL.Nat),
+    'principal' : IDL.Opt(IDL.Principal),
+    'exercisePerformanceHistory' : IDL.Vec(ExercisePerformance),
+    'username' : IDL.Text,
+    'bodyWeightHistory' : IDL.Vec(BodyWeightEntry),
+    'trainerCode' : IDL.Text,
+    'progressData' : IDL.Vec(WorkoutProgress),
+    'emailOrNickname' : IDL.Opt(IDL.Text),
+    'codicePT' : IDL.Text,
+  });
+  const AdminTrainerOverview = IDL.Record({
+    'trainerPrincipal' : IDL.Principal,
+    'ptCode' : IDL.Nat,
+    'clients' : IDL.Vec(Client),
+  });
+  const TrainerDetails = IDL.Record({
+    'ptCode' : IDL.Nat,
+    'lastName' : IDL.Text,
+    'firstName' : IDL.Text,
+  });
   const Booking = IDL.Record({
     'id' : IDL.Nat,
     'clientName' : IDL.Text,
@@ -224,10 +274,6 @@ export const idlFactory = ({ IDL }) => {
   const ClientProfile = IDL.Record({
     'username' : IDL.Text,
     'emailOrNickname' : IDL.Opt(IDL.Text),
-  });
-  const ExercisePerformance = IDL.Record({
-    'date' : IDL.Text,
-    'exercise' : Exercise,
   });
   const ExerciseLog = IDL.Record({
     'actualRepetitions' : IDL.Nat,
@@ -262,6 +308,7 @@ export const idlFactory = ({ IDL }) => {
     'addExercisePerformance' : IDL.Func([IDL.Text, Exercise, IDL.Text], [], []),
     'addWorkoutProgress' : IDL.Func([IDL.Text, WorkoutProgress], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'authenticateAdmin' : IDL.Func([IDL.Text], [], []),
     'authenticateClient' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'authenticateTrainer' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'createBooking' : IDL.Func([BookingUpdate], [IDL.Nat], []),
@@ -276,6 +323,12 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'deleteBooking' : IDL.Func([IDL.Nat], [], []),
+    'getAdminOverview' : IDL.Func(
+        [],
+        [IDL.Vec(AdminTrainerOverview)],
+        ['query'],
+      ),
+    'getAllTrainers' : IDL.Func([], [IDL.Vec(TrainerDetails)], ['query']),
     'getBodyWeightHistory' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(BodyWeightEntry)],
@@ -333,6 +386,7 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'registerTrainerIdentity' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'requestAppointment' : IDL.Func(
         [IDL.Text, IDL.Text, Time, IDL.Nat, IDL.Text],
         [IDL.Nat],

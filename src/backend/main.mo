@@ -1,11 +1,10 @@
 import Runtime "mo:core/Runtime";
-import Map "mo:core/Map";
 import Array "mo:core/Array";
+import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Time "mo:core/Time";
-
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
@@ -110,6 +109,18 @@ actor {
     isConfirmed : Bool;
   };
 
+  public type TrainerIdentity = {
+    firstName : Text;
+    lastName : Text;
+    ptCode : Nat;
+  };
+
+  public type TrainerDetails = {
+    firstName : Text;
+    lastName : Text;
+    ptCode : Nat;
+  };
+
   let clients = Map.empty<Text, Client>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   let principalToUsername = Map.empty<Principal, Text>();
@@ -117,14 +128,20 @@ actor {
   let trainerCodes = Map.empty<Principal, Nat>();
   let workouts = Map.empty<Text, Workout>();
   let workoutLogs = Map.empty<Text, WorkoutLog>();
+  let trainerIdentities = Map.empty<Principal, TrainerIdentity>();
 
   let bookings = Map.empty<Nat, Booking>();
   var nextBookingId = 1;
 
   var correctTrainerPassword : Text = "12345";
+  var correctAdminPassword : Text = "9876";
 
   func isTrainerPasswordCorrect(password : Text) : Bool {
     password == correctTrainerPassword;
+  };
+
+  func isAdminPasswordCorrect(password : Text) : Bool {
+    password == correctAdminPassword;
   };
 
   func isTrainer(caller : Principal) : Bool {
@@ -140,7 +157,68 @@ actor {
   };
 
   func isAuthenticatedUser(caller : Principal) : Bool {
-    trainerTokens.containsKey(caller) or principalToUsername.containsKey(caller);
+    trainerTokens.containsKey(caller) or principalToUsername.containsKey(caller) or AccessControl.isAdmin(accessControlState, caller);
+  };
+
+  public shared ({ caller }) func authenticateAdmin(password : Text) : async () {
+    if (not isAdminPasswordCorrect(password)) {
+      Runtime.trap("Wrong admin access code. Please verify your credentials.");
+    };
+
+    AccessControl.assignRole(accessControlState, caller, caller, #admin);
+
+    let adminProfile : UserProfile = {
+      username = "Admin";
+      role = "admin";
+      codicePT = null;
+      emailOrNickname = null;
+    };
+    userProfiles.add(caller, adminProfile);
+  };
+
+  public type AdminTrainerOverview = {
+    trainerPrincipal : Principal;
+    ptCode : Nat;
+    clients : [Client];
+  };
+
+  public query ({ caller }) func getAdminOverview() : async [AdminTrainerOverview] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Admin access required to fetch overview");
+    };
+
+    trainerCodes.toArray().map(
+      func(entry) {
+        let trainerPrincipal = entry.0;
+        let ptCode = entry.1;
+
+        let clientsForTrainer = clients.values().toArray().filter(
+          func(client) { client.trainerCode == ptCode.toText() }
+        );
+
+        {
+          trainerPrincipal;
+          ptCode;
+          clients = clientsForTrainer;
+        };
+      }
+    );
+  };
+
+  public query ({ caller }) func getAllTrainers() : async [TrainerDetails] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can access trainer list");
+    };
+
+    trainerIdentities.toArray().map(
+      func((principal, identity)) {
+        {
+          firstName = identity.firstName;
+          lastName = identity.lastName;
+          ptCode = identity.ptCode;
+        };
+      }
+    );
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -155,7 +233,7 @@ actor {
       Runtime.trap("Unauthorized: Only authenticated users can view profiles");
     };
 
-    if (caller != user and not isTrainer(caller)) {
+    if (caller != user and not isTrainer(caller) and not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
 
@@ -240,6 +318,36 @@ actor {
     ptCode;
   };
 
+  public shared ({ caller }) func registerTrainerIdentity(
+    firstName : Text,
+    lastName : Text,
+  ) : async () {
+    if (not isTrainer(caller)) {
+      Runtime.trap("Unauthorized: Only authenticated trainers can register identity");
+    };
+
+    let ptCode = switch (trainerCodes.get(caller)) {
+      case (?code) { code };
+      case (null) {
+        Runtime.trap("No PT code found. Please authenticate first.");
+      };
+    };
+
+    switch (trainerIdentities.get(caller)) {
+      case (?_) {
+        Runtime.trap("Trainer identity already exists. Use updateTrainerIdentity to change it.");
+      };
+      case (null) {
+        let identity : TrainerIdentity = {
+          firstName;
+          lastName;
+          ptCode;
+        };
+        trainerIdentities.add(caller, identity);
+      };
+    };
+  };
+
   public query ({ caller }) func getTrainerPtCode() : async Nat {
     if (not isTrainer(caller)) {
       Runtime.trap("Unauthorized: Only authenticated trainers can fetch PT code");
@@ -262,7 +370,7 @@ actor {
     trainerCode : Nat,
   ) : async () {
     if (clients.containsKey(username)) {
-      Runtime.trap("Nome utente già esistente. Scegli un altro nome.");
+      Runtime.trap("Nome utente gia esistente. Scegli un altro nome.");
     };
 
     if (username.size() < 4 or username.size() > 20) {

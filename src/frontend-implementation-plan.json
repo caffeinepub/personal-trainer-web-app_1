@@ -1,37 +1,52 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Update light theme to beige background with black text",
+  "title": "Admin dashboard personnel list (first/last name + PT code) and admin code validation",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Adjust light-mode surface and text CSS theme tokens in frontend/src/index.css (:root) to a beige-toned palette with black/near-black foreground for accessible contrast.",
+      "id": "REQ-2",
+      "summary": "Display a personnel list on the admin dashboard with First name, Last name, and PT code using `getAdminOverview()` data, handling missing identity safely.",
       "acceptanceCriteria": [
-        "In light mode, the page background and primary surfaces render in a beige tone (not pure white).",
-        "In light mode, default text renders as black or near-black across pages (login, dashboard, client dashboard) with good readability.",
-        "No UI areas remain unintentionally pure white due to theme tokens (except where explicitly intended, e.g., images)."
+        "AdminDashboardPage renders a clear personnel section/list where each trainer row shows First name, Last name, and PT code in English labels.",
+        "If a trainer identity is missing, the UI shows a safe placeholder (e.g., \"Not set\") instead of crashing or rendering `undefined`.",
+        "Existing admin dashboard functionality (loading state, error state, existing trainer/client overview display) continues to work."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/src/backend.d.ts",
           "operation": "modify",
-          "description": "Update the :root light theme tokens for main surfaces and foreground text: set --background/--card/--popover/--sidebar to beige-toned OKLCH values (not pure white) and set --foreground/--card-foreground/--popover-foreground/--sidebar-foreground to black/near-black with accessible contrast. Keep the existing .dark token block unchanged."
+          "description": "Update the `AdminTrainerOverview` TypeScript type to include trainer identity fields (first name, last name) as optional fields so the admin UI can consume the enhanced `getAdminOverview()` response safely."
+        },
+        {
+          "path": "frontend/src/components/admin/PersonnelTable.tsx",
+          "operation": "create",
+          "description": "Create a reusable personnel list/table component that renders rows with English column labels (First name, Last name, PT code) and uses safe placeholders (e.g., \"Not set\") when identity fields are missing. Use shadcn-ui table primitives (read-only) for consistent styling; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/AdminDashboardPage.tsx",
+          "operation": "modify",
+          "description": "Wire the new personnel section into the admin dashboard by importing and rendering `PersonnelTable` with the `useGetAdminOverview()` data, ensuring loading/error/empty states remain intact and the existing trainers/clients overview continues to work. Use shadcn-ui components (read-only) for layout as needed; verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-2",
-      "summary": "Align light-mode interactive/accent tokens in frontend/src/index.css with the beige/black theme to preserve contrast for buttons, borders, inputs, rings, and muted/secondary surfaces without regressing dark mode.",
+      "id": "REQ-3",
+      "summary": "Keep admin access restricted to code \"9876\" and show a clear English error for incorrect codes in the admin login flow.",
       "acceptanceCriteria": [
-        "Primary buttons and their text have clear contrast in light mode (no low-contrast beige-on-beige or black-on-black combinations).",
-        "Borders/inputs are visible but subtle on beige backgrounds in light mode.",
-        "Dark mode appearance remains functionally unchanged (no regressions in readability or broken colors)."
+        "Entering \"9876\" in the AdminLoginPage successfully navigates to the admin dashboard.",
+        "Entering any other code keeps the user on the admin login page and displays an English error message.",
+        "After successful admin login, admin-only queries (e.g., admin overview) load without authorization errors."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/src/pages/AdminLoginPage.tsx",
           "operation": "modify",
-          "description": "Refine light-mode interactive tokens in :root to match the beige/black theme while preserving usability: tune --primary/--primary-foreground, --secondary/--secondary-foreground, --muted/--muted-foreground, --accent/--accent-foreground, --border, --input, and --ring for clear contrast and subtle delineation on beige surfaces. Do not change .dark tokens unless a direct readability regression is identified during verification."
+          "description": "Add client-side validation to only attempt admin authentication when the entered access code equals \"9876\"; otherwise show a clear English error message and do not navigate. Ensure the existing mutation-driven loading UX remains intact. Use shadcn-ui form components (read-only) without modifying them; verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/utils/userFacingErrors.ts",
+          "operation": "modify",
+          "description": "Ensure backend admin-auth failures and admin-authorization failures normalize to clear, deterministic English messages (including incorrect code), so the login flow and subsequent admin-only data loads surface understandable errors."
         }
       ]
     }

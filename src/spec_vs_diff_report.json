@@ -1,29 +1,69 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T11:58:46.922Z",
-  "summary": "The diff updates the light-mode CSS theme tokens in `frontend/src/index.css` to beige-toned surfaces and near-black foreground text, and adjusts interactive/border/input/ring tokens for readability. No explicit missing implementation for REQ-1 or REQ-2 is evident from the provided diff summary. However, the change also modifies project metadata/summaries not requested by the BuildRequest.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-12T11:44:06.353Z",
+  "summary": "Frontend adds a new PersonnelTable and updates admin pages/hooks, but the diff does not clearly show the backend `getAdminOverview()` being updated to include trainer first/last names and PT code. The admin UI personnel list appears to be driven by a newly introduced `getAllTrainers()` API rather than `getAdminOverview()` as requested. Several unrelated trainer/client UI and styling changes were also introduced that are not in scope of the BuildRequest.",
+  "missing_requirements": [
     {
-      "description": "Updated/added project tracking metadata for the request (marked feature requests as pending)",
-      "reason": "The BuildRequest only asks for light-theme token changes in `frontend/src/index.css` and explicitly lists non-goals as adding new application features; modifying `project_state.json` is not requested as part of the theme change.",
+      "id": "REQ-1",
+      "requirement": "Update the backend `getAdminOverview()` to return, for each trainer, PT code plus identity fields (first name, last name) sourced from stored trainer identity data; handle missing identity safely; keep it admin-protected.",
+      "reason": "The backend diff snippet shows new types/maps for trainer identity and admin password handling, but the provided truncated `backend/main.mo` excerpt does not include any visible implementation or change to `getAdminOverview()` (nor evidence of optional/safe handling for missing identities).",
       "evidence": [
-        "project_state.json"
+        "backend/main.mo (truncated; does not show `getAdminOverview()` implementation)"
       ]
     },
     {
-      "description": "Updated generated frontend file summaries document",
-      "reason": "The BuildRequest does not request updating repository summary/docs; only theme token changes are required.",
+      "id": "REQ-2",
+      "requirement": "Admin dashboard displays the personnel list (First name, Last name, PT code) using data returned by `getAdminOverview()`.",
+      "reason": "The admin dashboard fetches trainers via a separate hook `useGetAllTrainers()` calling `actor.getAllTrainers()` and passes that to `PersonnelTable`. This does not match the requirement to use `getAdminOverview()` as the data source for the personnel list.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/hooks/useQueries.ts (adds `useGetAllTrainers` -> `actor.getAllTrainers()`)",
+        "frontend/src/pages/AdminDashboardPage.tsx (imports/uses `useGetAllTrainers` alongside `useGetAdminOverview`)",
+        "frontend/src/components/admin/PersonnelTable.tsx (expects `TrainerDetails[]` rather than admin overview objects)"
       ]
     }
   ],
-  "confidence": 0.86,
+  "hallucinated_features": [
+    {
+      "description": "Introduced a new backend API usage for listing trainers (`getAllTrainers`) and a corresponding React Query hook (`useGetAllTrainers`) instead of using only `getAdminOverview()` for the admin personnel list.",
+      "reason": "BuildRequest only mentions `authenticateAdmin(\"9876\")` and `getAdminOverview()` for admin dashboard data; it does not request a separate `getAllTrainers()` endpoint/query.",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/AdminDashboardPage.tsx"
+      ]
+    },
+    {
+      "description": "Large scope of trainer workout builder enhancements (edit mode, muscle group parsing, rest-time/set-weight normalization utilities usage).",
+      "reason": "Not requested by any REQ; BuildRequest is limited to admin login and admin personnel display.",
+      "evidence": [
+        "frontend/src/components/trainer/WorkoutBuilder.tsx"
+      ]
+    },
+    {
+      "description": "Global styling/theme updates to index.css (OKLCH white/near-white background adjustments).",
+      "reason": "Not requested; BuildRequest does not mention visual redesign or theme changes.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/src/index.css summary)"
+      ]
+    },
+    {
+      "description": "Multiple client/trainer dashboard components and charts added/updated (bodyweight progression chart, exercise performance progression, client dashboard conditional flows, client registration/login error-handling changes).",
+      "reason": "Not requested; BuildRequest explicitly says not to redesign trainer/client dashboards beyond what is required for admin view.",
+      "evidence": [
+        "frontend-file-summaries.txt (summaries for ClientLoginPage.tsx, RegistrationPage.tsx, ClientDashboardPage.tsx, BodyweightProgressionChart.tsx, ExercisePerformanceProgression.tsx, TrainerClientDetailSections.tsx, ClientWorkoutsList.tsx, etc.)"
+      ]
+    }
+  ],
+  "confidence": 0.63,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/index.css",
+    "frontend/src/components/admin/PersonnelTable.tsx",
+    "frontend/src/components/trainer/WorkoutBuilder.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminDashboardPage.tsx",
+    "frontend/src/pages/AdminLoginPage.tsx",
+    "frontend/src/utils/userFacingErrors.ts",
     "project_state.json"
   ]
 }

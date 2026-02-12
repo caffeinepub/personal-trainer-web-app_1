@@ -182,9 +182,9 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
         {/* Footer */}
         <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-            © 2026. Built with love using{' '}
+            © {new Date().getFullYear()}. Built with love using{' '}
             <a
-              href="https://caffeine.ai"
+              href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-foreground transition-colors hover:text-primary"
@@ -482,58 +482,67 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
             )}
 
             {/* Progress History */}
-            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Storico Allenamenti</CardTitle>
-                <CardDescription>
-                  I tuoi allenamenti registrati
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex h-40 items-center justify-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                  </div>
-                ) : progressData && progressData.length > 0 ? (
-                  <div className="space-y-4">
-                    {progressData.slice().reverse().map((progress, index) => (
-                      <div
-                        key={index}
-                        className="rounded-lg border border-border/50 bg-background/50 p-4"
-                      >
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="font-medium">{progress.date}</span>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="border-border/50 bg-card/80 backdrop-blur-sm">
+                    <CardContent className="p-6">
+                      <div className="h-20 animate-pulse rounded bg-muted" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : progressData && progressData.length > 0 ? (
+              <div className="space-y-4">
+                {progressData.slice().reverse().map((progress, index) => (
+                  <Card key={index} className="border-border/50 bg-card/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{progress.date}</CardTitle>
+                        <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                          {progress.exercises.length} {progress.exercises.length === 1 ? 'esercizio' : 'esercizi'}
                         </div>
-                        <div className="space-y-2">
-                          {progress.exercises.map((exercise, exIndex) => (
-                            <div key={exIndex} className="text-sm">
-                              <span className="font-medium">{exercise.name}</span>
-                              <span className="text-muted-foreground">
-                                {' '}
-                                - {exercise.sets.toString()} serie x{' '}
-                                {exercise.repetitions.toString()} rip
-                                {exercise.setWeights.length > 0 && (
-                                  <> @ {exercise.setWeights[0].toString()}kg</>
-                                )}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        {progress.comments && (
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {progress.comments}
-                          </p>
-                        )}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex h-40 items-center justify-center text-muted-foreground">
-                    Nessun allenamento registrato
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      {progress.comments && (
+                        <CardDescription>{progress.comments}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {progress.exercises.map((exercise, exIndex) => (
+                          <div
+                            key={exIndex}
+                            className="flex items-center justify-between rounded-lg border border-border/50 bg-card/50 p-3"
+                          >
+                            <div>
+                              <p className="font-semibold">{exercise.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {Number(exercise.sets)} serie × {Number(exercise.repetitions)} rip
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-primary">
+                                {exercise.setWeights.length > 0 ? Number(exercise.setWeights[0]) : 0} kg
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardContent className="py-12 text-center">
+                  <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold">Nessun allenamento registrato</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Inizia ad aggiungere i tuoi allenamenti per monitorare i progressi
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>
@@ -541,9 +550,9 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
       {/* Footer */}
       <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          © 2026. Built with love using{' '}
+          © {new Date().getFullYear()}. Built with love using{' '}
           <a
-            href="https://caffeine.ai"
+            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-foreground transition-colors hover:text-primary"

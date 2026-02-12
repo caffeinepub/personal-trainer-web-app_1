@@ -2,29 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-app-light-theme-to-use-a-beige-background-with-black-or-near-black-foreground-text-by-adjusting-the-light-mode-css-theme-tokens-in-frontend-src-index-css-the-root-block-ensure-the-main-surfaces-background-card-popover-sidebar-are-beige-toned-and-that-text-tokens-foreground-card-foreground-popover-foreground-sidebar-foreground-resolve-to-black-near-black-with-accessible-contrast",
-      "featureTitle": "Update the app light theme to use a beige background with black (or near-black) foreground text by adjusting the light-mode CSS theme tokens in `frontend/src/index.css` (the `:root` block). Ensure the main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) are beige-toned and that text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) resolve to black/near-black with accessible contrast.",
+      "featureId": "feature-update-the-admin-dashboard-ui-to-display-the-personnel-list-with-columns-for-first-name-last-name-and-pt-code-using-the-data-returned-by-getadminoverview",
+      "featureTitle": "Update the admin dashboard UI to display the personnel list with columns for First name, Last name, and PT code, using the data returned by `getAdminOverview()`.",
       "files": [
-        "frontend/src/index.css"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "authorization@4.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-align-light-mode-interactive-accent-tokens-in-frontend-src-index-css-with-the-beige-black-theme-so-buttons-borders-inputs-rings-and-muted-secondary-surfaces-remain-consistent-and-readable-e-g-primary-primary-foreground-secondary-muted-accent-border-input-ring-keep-the-existing-dark-theme-tokens-unchanged-unless-they-cause-readability-issues-after-the-light-theme-update",
-      "featureTitle": "Align light-mode interactive/accent tokens in `frontend/src/index.css` with the beige/black theme so buttons, borders, inputs, rings, and muted/secondary surfaces remain consistent and readable (e.g., `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`). Keep the existing dark theme tokens unchanged unless they cause readability issues after the light-theme update.",
-      "files": [
-        "frontend/src/index.css"
+        "frontend/src/components/admin/PersonnelTable.tsx",
+        "frontend/src/pages/AdminDashboardPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -36,6 +18,26 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-admin-login-flow-continues-to-grant-access-only-when-the-admin-access-code-equals-9876-and-show-a-clear-english-error-message-for-incorrect-codes",
+      "featureTitle": "Ensure the admin login flow continues to grant access only when the admin access code equals \"9876\", and show a clear English error message for incorrect codes.",
+      "files": [
+        "frontend/src/pages/AdminLoginPage.tsx",
+        "frontend/src/utils/userFacingErrors.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "authorization@4.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

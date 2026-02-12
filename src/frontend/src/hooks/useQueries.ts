@@ -11,7 +11,63 @@ import type {
   Booking,
   BookingUpdate,
   Time,
+  AdminTrainerOverview,
+  TrainerDetails,
 } from '../backend';
+
+// Trainer Identity type (matching backend)
+export interface TrainerIdentity {
+  firstName: string;
+  lastName: string;
+  ptCode: bigint;
+}
+
+// Admin Authentication
+export function useAuthenticateAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (password: string) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.authenticateAdmin(password);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['adminOverview'] });
+      queryClient.invalidateQueries({ queryKey: ['allTrainers'] });
+    },
+    retry: 1,
+  });
+}
+
+export function useGetAdminOverview() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<AdminTrainerOverview[]>({
+    queryKey: ['adminOverview'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getAdminOverview();
+    },
+    enabled: !!actor && !isFetching,
+    retry: 1,
+  });
+}
+
+export function useGetAllTrainers() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<TrainerDetails[]>({
+    queryKey: ['allTrainers'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getAllTrainers();
+    },
+    enabled: !!actor && !isFetching,
+    retry: 1,
+  });
+}
 
 // Trainer Authentication
 export function useAuthenticateTrainer() {
@@ -56,7 +112,65 @@ export function useUpdateTrainerCode() {
   });
 }
 
-// Client Management
+// Trainer Identity
+export function useRegisterTrainerIdentity() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ firstName, lastName }: { firstName: string; lastName: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.registerTrainerIdentity(firstName, lastName);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['allTrainers'] });
+    },
+    retry: 1,
+  });
+}
+
+// Client Authentication
+export function useAuthenticateClient() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ username, codicePT }: { username: string; codicePT: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.authenticateClient(username, codicePT);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    },
+    retry: 1,
+  });
+}
+
+// Client Registration
+export function useRegisterClient() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async ({
+      username,
+      codicePT,
+      emailOrNickname,
+      trainerCode,
+    }: {
+      username: string;
+      codicePT: string;
+      emailOrNickname: string | null;
+      trainerCode: bigint;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.registerClient(username, codicePT, emailOrNickname, trainerCode);
+    },
+    retry: 1,
+  });
+}
+
+// Clients List
 export function useGetClientsForTrainer() {
   const { actor, isFetching } = useActor();
 
@@ -71,6 +185,7 @@ export function useGetClientsForTrainer() {
   });
 }
 
+// Client Profile
 export function useGetClientProfile(username: string) {
   const { actor, isFetching } = useActor();
 
@@ -97,96 +212,46 @@ export function useUpdateClientEmail() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['clientProfile', variables.username] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clientInfo', variables.username] });
     },
     retry: 1,
   });
 }
 
-// Client Registration/Authentication
-export function useRegisterClient() {
-  const { actor } = useActor();
-
-  return useMutation({
-    mutationFn: async ({
-      username,
-      codicePT,
-      emailOrNickname,
-      trainerCode,
-    }: {
-      username: string;
-      codicePT: string;
-      emailOrNickname: string | null;
-      trainerCode: bigint;
-    }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.registerClient(username, codicePT, emailOrNickname, trainerCode);
-    },
-    retry: 1,
-  });
-}
-
-export function useAuthenticateClient() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ username, codicePT }: { username: string; codicePT: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.authenticateClient(username, codicePT);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-    },
-    retry: 1,
-  });
-}
-
-// Progress and Info
-export function useGetClientProgress(username: string) {
+// Client Info (username, codicePT, emailOrNickname)
+export function useGetClientInfo(username: string) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<WorkoutProgress[]>({
-    queryKey: ['clientProgress', username],
+  return useQuery<[string, string, string | null]>({
+    queryKey: ['clientInfo', username],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getClientProgress(username);
+      return actor.getClientInfo(username);
     },
     enabled: !!actor && !isFetching && !!username,
     retry: 1,
   });
 }
 
-export function useAddWorkoutProgress() {
+// Client Height
+export function useSetClientHeight() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ username, progress }: { username: string; progress: WorkoutProgress }) => {
+    mutationFn: async ({ username, height }: { username: string; height: bigint }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addWorkoutProgress(username, progress);
+      return actor.setClientHeight(username, height);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['clientProgress', variables.username] });
+      queryClient.invalidateQueries({ queryKey: ['clientInfo', variables.username] });
+      queryClient.invalidateQueries({ queryKey: ['bodyWeightHistory', variables.username] });
     },
     retry: 1,
   });
 }
 
-// Bodyweight
-export function useGetBodyWeightHistory(username: string) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<BodyWeightEntry[]>({
-    queryKey: ['bodyWeightHistory', username],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getBodyWeightHistory(username);
-    },
-    enabled: !!actor && !isFetching && !!username,
-    retry: 1,
-  });
-}
-
+// Body Weight
 export function useAddBodyWeightEntry() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -203,33 +268,21 @@ export function useAddBodyWeightEntry() {
   });
 }
 
-export function useSetClientHeight() {
-  const { actor } = useActor();
-
-  return useMutation({
-    mutationFn: async ({ username, height }: { username: string; height: bigint }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.setClientHeight(username, height);
-    },
-    retry: 1,
-  });
-}
-
-// Exercise Performance
-export function useGetExercisePerformanceHistory(username: string) {
+export function useGetBodyWeightHistory(username: string) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<ExercisePerformance[]>({
-    queryKey: ['exercisePerformanceHistory', username],
+  return useQuery<BodyWeightEntry[]>({
+    queryKey: ['bodyWeightHistory', username],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getExercisePerformanceHistory(username);
+      return actor.getBodyWeightHistory(username);
     },
     enabled: !!actor && !isFetching && !!username,
     retry: 1,
   });
 }
 
+// Exercise Performance
 export function useAddExercisePerformance() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -246,21 +299,52 @@ export function useAddExercisePerformance() {
   });
 }
 
-// Workouts
-export function useGetWorkoutsForClient(clientUsername: string) {
+export function useGetExercisePerformanceHistory(username: string) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<Workout[]>({
-    queryKey: ['workouts', clientUsername],
+  return useQuery<ExercisePerformance[]>({
+    queryKey: ['exercisePerformanceHistory', username],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getWorkoutsForClient(clientUsername);
+      return actor.getExercisePerformanceHistory(username);
     },
-    enabled: !!actor && !isFetching && !!clientUsername,
+    enabled: !!actor && !isFetching && !!username,
     retry: 1,
   });
 }
 
+// Workout Progress
+export function useAddWorkoutProgress() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ username, progress }: { username: string; progress: WorkoutProgress }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.addWorkoutProgress(username, progress);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['clientProgress', variables.username] });
+    },
+    retry: 1,
+  });
+}
+
+export function useGetClientProgress(username: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<WorkoutProgress[]>({
+    queryKey: ['clientProgress', username],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getClientProgress(username);
+    },
+    enabled: !!actor && !isFetching && !!username,
+    retry: 1,
+  });
+}
+
+// Workouts
 export function useCreateClientWorkout() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -296,18 +380,16 @@ export function useCreateOwnWorkout() {
       name,
       exercises,
       comments,
-      clientUsername,
     }: {
       name: string;
       exercises: Exercise[];
       comments: string;
-      clientUsername: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.createOwnWorkout(name, exercises, comments);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['workouts', variables.clientUsername] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
     },
     retry: 1,
   });
@@ -322,38 +404,36 @@ export function useUpdateWorkout() {
       workoutId,
       exercises,
       comments,
-      clientUsername,
     }: {
       workoutId: string;
       exercises: Exercise[];
       comments: string;
-      clientUsername: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.updateWorkout(workoutId, exercises, comments);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['workouts', variables.clientUsername] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
     },
+    retry: 1,
+  });
+}
+
+export function useGetWorkoutsForClient(clientUsername: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Workout[]>({
+    queryKey: ['workouts', clientUsername],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getWorkoutsForClient(clientUsername);
+    },
+    enabled: !!actor && !isFetching && !!clientUsername,
     retry: 1,
   });
 }
 
 // Workout Logs
-export function useGetWorkoutLogsForClient(username: string) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<WorkoutLog[]>({
-    queryKey: ['workoutLogs', username],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getWorkoutLogsForClient(username);
-    },
-    enabled: !!actor && !isFetching && !!username,
-    retry: 1,
-  });
-}
-
 export function useLogWorkoutCompletion() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -371,21 +451,21 @@ export function useLogWorkoutCompletion() {
   });
 }
 
-// Bookings
-export function useGetBookingsByDateRange(startTime: Time, endTime: Time) {
+export function useGetWorkoutLogsForClient(username: string) {
   const { actor, isFetching } = useActor();
 
-  return useQuery<Booking[]>({
-    queryKey: ['bookings', startTime.toString(), endTime.toString()],
+  return useQuery<WorkoutLog[]>({
+    queryKey: ['workoutLogs', username],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getBookingsByDateRange(startTime, endTime);
+      return actor.getWorkoutLogsForClient(username);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!username,
     retry: 1,
   });
 }
 
+// Bookings
 export function useCreateBooking() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -434,6 +514,20 @@ export function useDeleteBooking() {
   });
 }
 
+export function useGetBookingsByDateRange(startTime: Time, endTime: Time) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Booking[]>({
+    queryKey: ['bookings', startTime.toString(), endTime.toString()],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getBookingsByDateRange(startTime, endTime);
+    },
+    enabled: !!actor && !isFetching,
+    retry: 1,
+  });
+}
+
 // Client Appointments
 export function useRequestAppointment() {
   const { actor } = useActor();
@@ -458,7 +552,6 @@ export function useRequestAppointment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['confirmedAppointments'] });
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     retry: 1,
   });

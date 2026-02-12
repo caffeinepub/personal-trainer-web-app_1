@@ -6,9 +6,11 @@ import DashboardPage from './pages/DashboardPage';
 import ClientDashboardPage from './pages/ClientDashboardPage';
 import RegistrationPage from './pages/RegistrationPage';
 import ClientLoginPage from './pages/ClientLoginPage';
+import AdminLoginPage from './pages/AdminLoginPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
-type UserType = 'trainer' | 'client' | null;
-type ViewType = 'trainer-login' | 'client-login' | 'registration' | 'dashboard';
+type UserType = 'trainer' | 'client' | 'admin' | null;
+type ViewType = 'trainer-login' | 'client-login' | 'registration' | 'dashboard' | 'admin-login' | 'admin-dashboard';
 
 function App() {
   const queryClient = useQueryClient();
@@ -29,6 +31,9 @@ function App() {
       setUserType('client');
       setUsername(storedUsername);
       setCurrentView('dashboard');
+    } else if (authType === 'admin') {
+      setUserType('admin');
+      setCurrentView('admin-dashboard');
     }
     setIsLoading(false);
   }, []);
@@ -47,11 +52,25 @@ function App() {
     setCurrentView('dashboard');
   };
 
+  const handleAdminLoginSuccess = () => {
+    sessionStorage.setItem('pt_auth_type', 'admin');
+    setUserType('admin');
+    setCurrentView('admin-dashboard');
+  };
+
   const handleLogout = () => {
     sessionStorage.removeItem('pt_auth_type');
     sessionStorage.removeItem('pt_username');
     setUserType(null);
     setUsername('');
+    setCurrentView('trainer-login');
+    // Clear all cached queries
+    queryClient.clear();
+  };
+
+  const handleAdminLogout = () => {
+    sessionStorage.removeItem('pt_auth_type');
+    setUserType(null);
     setCurrentView('trainer-login');
     // Clear all cached queries
     queryClient.clear();
@@ -67,6 +86,10 @@ function App() {
 
   const handleNavigateToRegistration = () => {
     setCurrentView('registration');
+  };
+
+  const handleNavigateToAdminLogin = () => {
+    setCurrentView('admin-login');
   };
 
   const handleRegistrationSuccess = (clientUsername: string) => {
@@ -96,10 +119,20 @@ function App() {
         {currentView === 'dashboard' && userType === 'client' && (
           <ClientDashboardPage username={username} onLogout={handleLogout} />
         )}
+        {currentView === 'admin-dashboard' && (
+          <AdminDashboardPage onLogout={handleAdminLogout} />
+        )}
+        {currentView === 'admin-login' && (
+          <AdminLoginPage
+            onLoginSuccess={handleAdminLoginSuccess}
+            onBack={handleNavigateToTrainerLogin}
+          />
+        )}
         {currentView === 'trainer-login' && (
           <LoginPage
             onLoginSuccess={handleTrainerLoginSuccess}
             onNavigateToClientLogin={handleNavigateToClientLogin}
+            onNavigateToAdmin={handleNavigateToAdminLogin}
           />
         )}
         {currentView === 'client-login' && (

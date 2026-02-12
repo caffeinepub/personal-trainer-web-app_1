@@ -6,15 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dumbbell, Lock, AlertCircle, Users, Loader2 } from 'lucide-react';
+import { Dumbbell, Lock, AlertCircle, Users, Loader2, Shield } from 'lucide-react';
 import { normalizeError, logErrorDetails } from '../utils/userFacingErrors';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
   onNavigateToClientLogin: () => void;
+  onNavigateToAdmin: () => void;
 }
 
-export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: LoginPageProps) {
+export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin, onNavigateToAdmin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { actor, isFetching } = useActor();
@@ -61,13 +62,23 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center px-4">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
               <Dumbbell className="h-6 w-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold">Personal Trainer</span>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onNavigateToAdmin}
+            aria-label="Admin"
+            className="gap-2"
+          >
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Admin</span>
+          </Button>
         </div>
       </header>
 

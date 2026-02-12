@@ -10,6 +10,11 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AdminTrainerOverview {
+  'trainerPrincipal' : Principal,
+  'ptCode' : bigint,
+  'clients' : Array<Client>,
+}
 export interface BodyWeightEntry { 'weight' : bigint, 'date' : string }
 export interface Booking {
   'id' : bigint,
@@ -28,6 +33,17 @@ export interface BookingUpdate {
   'notes' : string,
   'isConfirmed' : boolean,
   'dateTime' : Time,
+}
+export interface Client {
+  'height' : [] | [bigint],
+  'principal' : [] | [Principal],
+  'exercisePerformanceHistory' : Array<ExercisePerformance>,
+  'username' : string,
+  'bodyWeightHistory' : Array<BodyWeightEntry>,
+  'trainerCode' : string,
+  'progressData' : Array<WorkoutProgress>,
+  'emailOrNickname' : [] | [string],
+  'codicePT' : string,
 }
 export interface ClientProfile {
   'username' : string,
@@ -52,6 +68,11 @@ export interface ExerciseLog {
 }
 export interface ExercisePerformance { 'date' : string, 'exercise' : Exercise }
 export type Time = bigint;
+export interface TrainerDetails {
+  'ptCode' : bigint,
+  'lastName' : string,
+  'firstName' : string,
+}
 export interface UserProfile {
   'username' : string,
   'role' : string,
@@ -88,6 +109,7 @@ export interface _SERVICE {
   'addExercisePerformance' : ActorMethod<[string, Exercise, string], undefined>,
   'addWorkoutProgress' : ActorMethod<[string, WorkoutProgress], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'authenticateAdmin' : ActorMethod<[string], undefined>,
   'authenticateClient' : ActorMethod<[string, string], undefined>,
   'authenticateTrainer' : ActorMethod<[string], bigint>,
   'createBooking' : ActorMethod<[BookingUpdate], bigint>,
@@ -100,6 +122,8 @@ export interface _SERVICE {
     undefined
   >,
   'deleteBooking' : ActorMethod<[bigint], undefined>,
+  'getAdminOverview' : ActorMethod<[], Array<AdminTrainerOverview>>,
+  'getAllTrainers' : ActorMethod<[], Array<TrainerDetails>>,
   'getBodyWeightHistory' : ActorMethod<[string], Array<BodyWeightEntry>>,
   'getBookingsByDateRange' : ActorMethod<[Time, Time], Array<Booking>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -123,6 +147,7 @@ export interface _SERVICE {
     [string, string, [] | [string], bigint],
     undefined
   >,
+  'registerTrainerIdentity' : ActorMethod<[string, string], undefined>,
   'requestAppointment' : ActorMethod<
     [string, string, Time, bigint, string],
     bigint

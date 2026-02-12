@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Update the app’s light theme to use beige-toned backgrounds and black/near-black text with accessible contrast.
+**Goal:** Allow admin login via code "9876" and show a personnel (trainers) list on the admin dashboard with each trainer’s first name, last name, and PT code.
 
 **Planned changes:**
-- Adjust light-mode CSS theme tokens in `frontend/src/index.css` (`:root`) so main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) render in beige tones instead of pure white.
-- Update light-mode foreground/text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) to resolve to black/near-black for readable contrast across pages.
-- Align light-mode interactive/accent tokens (`--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`) to remain consistent and readable on beige backgrounds, while keeping dark theme tokens unchanged unless readability issues appear.
+- Backend: Extend the admin-protected `getAdminOverview()` response to include each trainer’s PT code plus identity fields (first name, last name) sourced from stored trainer identity data, handling missing identity safely.
+- Frontend: Update AdminDashboardPage to render a personnel list/table with English column labels (First name, Last name, PT code) using `getAdminOverview()` data and showing safe placeholders when identity is missing.
+- Frontend/Backend: Keep admin access restricted to the code "9876" and show a clear English error message on the admin login page when an incorrect code is entered.
 
-**User-visible outcome:** In light mode, pages (including login, dashboard, and client dashboard) display beige backgrounds with clearly readable black/near-black text, with buttons/inputs/borders remaining visually consistent and dark mode unaffected.
+**User-visible outcome:** Admins can enter code "9876" to access the admin dashboard and view a personnel list showing each trainer’s first name, last name, and PT code; incorrect codes show an English error and do not grant access.

@@ -178,14 +178,12 @@ export default function WorkoutBuilder({ clientUsername, onSuccess, mode = 'trai
           workoutId,
           exercises: backendExercises,
           comments: comments.trim(),
-          clientUsername,
         });
       } else if (mode === 'client') {
         await createOwnWorkoutMutation.mutateAsync({
           name: workoutName.trim(),
           exercises: backendExercises,
           comments: comments.trim(),
-          clientUsername,
         });
       } else {
         await createClientWorkoutMutation.mutateAsync({

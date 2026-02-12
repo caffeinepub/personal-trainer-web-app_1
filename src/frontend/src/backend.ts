@@ -109,6 +109,7 @@ export interface WorkoutLog {
     comments: string;
     workoutName: string;
 }
+export type Time = bigint;
 export interface BodyWeightEntry {
     weight: bigint;
     date: string;
@@ -117,12 +118,30 @@ export interface ClientProfile {
     username: string;
     emailOrNickname?: string;
 }
+export interface Booking {
+    id: bigint;
+    clientName: string;
+    clientEmail: string;
+    trainerPrincipal: Principal;
+    durationMinutes: bigint;
+    notes: string;
+    isConfirmed: boolean;
+    dateTime: Time;
+}
 export interface Workout {
     creator: string;
     name: string;
     exercises: Array<Exercise>;
     clientUsername: string;
     comments: string;
+}
+export interface BookingUpdate {
+    clientName: string;
+    clientEmail: string;
+    durationMinutes: bigint;
+    notes: string;
+    isConfirmed: boolean;
+    dateTime: Time;
 }
 export interface WorkoutProgress {
     date: string;
@@ -158,15 +177,19 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     authenticateClient(username: string, codicePT: string): Promise<void>;
     authenticateTrainer(password: string): Promise<bigint>;
+    createBooking(booking: BookingUpdate): Promise<bigint>;
     createClientWorkout(clientUsername: string, name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
     createOwnWorkout(name: string, exercises: Array<Exercise>, comments: string): Promise<void>;
+    deleteBooking(bookingId: bigint): Promise<void>;
     getBodyWeightHistory(username: string): Promise<Array<BodyWeightEntry>>;
+    getBookingsByDateRange(startTime: Time, endTime: Time): Promise<Array<Booking>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getClientInfo(username: string): Promise<[string, string, string | null]>;
     getClientProfile(username: string): Promise<ClientProfile>;
     getClientProgress(username: string): Promise<Array<WorkoutProgress>>;
     getClientsForTrainer(): Promise<Array<ClientProfile>>;
+    getConfirmedAppointmentsForClient(): Promise<Array<Booking>>;
     getExercisePerformanceHistory(username: string): Promise<Array<ExercisePerformance>>;
     getTrainerPtCode(): Promise<bigint>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -175,10 +198,13 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     logWorkoutCompletion(log: WorkoutLog, workoutId: string): Promise<void>;
     registerClient(username: string, codicePT: string, emailOrNickname: string | null, trainerCode: bigint): Promise<void>;
+    requestAppointment(clientName: string, clientEmail: string, dateTime: Time, durationMinutes: bigint, notes: string): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setClientHeight(username: string, height: bigint): Promise<void>;
+    updateBooking(bookingId: bigint, updatedBooking: BookingUpdate): Promise<void>;
     updateClientEmail(username: string, newEmail: string): Promise<void>;
-    updateClientWorkout(clientUsername: string, workoutName: string, exercises: Array<Exercise>, comments: string): Promise<void>;
+    updateTrainerCode(currentCode: string, newCode: string): Promise<void>;
+    updateWorkout(workoutId: string, exercises: Array<Exercise>, comments: string): Promise<void>;
 }
 import type { ClientProfile as _ClientProfile, ExerciseLog as _ExerciseLog, UserProfile as _UserProfile, UserRole as _UserRole, WorkoutLog as _WorkoutLog } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -281,6 +307,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async createBooking(arg0: BookingUpdate): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createBooking(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createBooking(arg0);
+            return result;
+        }
+    }
     async createClientWorkout(arg0: string, arg1: string, arg2: Array<Exercise>, arg3: string): Promise<void> {
         if (this.processError) {
             try {
@@ -309,6 +349,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteBooking(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteBooking(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteBooking(arg0);
+            return result;
+        }
+    }
     async getBodyWeightHistory(arg0: string): Promise<Array<BodyWeightEntry>> {
         if (this.processError) {
             try {
@@ -320,6 +374,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getBodyWeightHistory(arg0);
+            return result;
+        }
+    }
+    async getBookingsByDateRange(arg0: Time, arg1: Time): Promise<Array<Booking>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getBookingsByDateRange(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getBookingsByDateRange(arg0, arg1);
             return result;
         }
     }
@@ -413,6 +481,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getClientsForTrainer();
             return from_candid_vec_n11(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getConfirmedAppointmentsForClient(): Promise<Array<Booking>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getConfirmedAppointmentsForClient();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getConfirmedAppointmentsForClient();
+            return result;
         }
     }
     async getExercisePerformanceHistory(arg0: string): Promise<Array<ExercisePerformance>> {
@@ -527,6 +609,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async requestAppointment(arg0: string, arg1: string, arg2: Time, arg3: bigint, arg4: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.requestAppointment(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.requestAppointment(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
@@ -555,6 +651,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateBooking(arg0: bigint, arg1: BookingUpdate): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateBooking(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateBooking(arg0, arg1);
+            return result;
+        }
+    }
     async updateClientEmail(arg0: string, arg1: string): Promise<void> {
         if (this.processError) {
             try {
@@ -569,17 +679,31 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateClientWorkout(arg0: string, arg1: string, arg2: Array<Exercise>, arg3: string): Promise<void> {
+    async updateTrainerCode(arg0: string, arg1: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateClientWorkout(arg0, arg1, arg2, arg3);
+                const result = await this.actor.updateTrainerCode(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateClientWorkout(arg0, arg1, arg2, arg3);
+            const result = await this.actor.updateTrainerCode(arg0, arg1);
+            return result;
+        }
+    }
+    async updateWorkout(arg0: string, arg1: Array<Exercise>, arg2: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateWorkout(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateWorkout(arg0, arg1, arg2);
             return result;
         }
     }

@@ -7,8 +7,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dumbbell, LogOut, Activity, Calendar, Users, TrendingUp, Copy, CheckCircle2, AlertCircle, ArrowLeft, Mail, Settings, Lock } from 'lucide-react';
-import { useGetTrainerPtCode, useGetClientsForTrainer, useGetClientProfile, useUpdateClientEmail } from '../hooks/useQueries';
+import { useGetTrainerPtCode, useGetClientsForTrainer, useGetClientProfile, useUpdateClientEmail, useUpdateTrainerCode } from '../hooks/useQueries';
 import TrainerClientDetailSections from '../components/trainer/TrainerClientDetailSections';
+import TrainerBookingsCalendar from '../components/trainer/TrainerBookingsCalendar';
+import { extractErrorMessage, mapTrainerCodeChangeError } from '../utils/trainerAuthErrors';
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -33,6 +35,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
   const { data: clients = [], isLoading: clientsLoading, isError: clientsError } = useGetClientsForTrainer();
   const { data: clientProfile, isLoading: clientProfileLoading } = useGetClientProfile(selectedClient || '');
   const updateEmailMutation = useUpdateClientEmail();
+  const updateTrainerCodeMutation = useUpdateTrainerCode();
 
   const formattedPtCode = ptCode ? String(ptCode).padStart(5, '0') : '';
 
@@ -92,41 +95,40 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
     // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setPasswordError('Tutti i campi sono obbligatori');
+      setPasswordError('All fields are required');
       return;
     }
 
-    if (newPassword.length < 4) {
-      setPasswordError('Il nuovo codice deve essere di almeno 4 caratteri');
+    if (newPassword.length < 5) {
+      setPasswordError('The new access code must be at least 5 characters long');
+      return;
+    }
+
+    if (newPassword.length > 20) {
+      setPasswordError('The new access code must not exceed 20 characters');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('I codici non corrispondono');
+      setPasswordError('The new access codes do not match');
       return;
     }
 
-    // TODO: Call backend method to update password when available
-    // For now, show a message that the feature is coming soon
-    setPasswordError('Funzionalità in arrivo: il backend non supporta ancora la modifica del codice di accesso');
-    
-    // When backend is ready, uncomment this:
-    /*
     try {
-      await updateTrainerPasswordMutation.mutateAsync({
-        currentPassword,
-        newPassword,
+      await updateTrainerCodeMutation.mutateAsync({
+        currentCode: currentPassword.trim(),
+        newCode: newPassword.trim(),
       });
       setPasswordSuccess(true);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => setPasswordSuccess(false), 3000);
+      setTimeout(() => setPasswordSuccess(false), 5000);
     } catch (err: any) {
-      const errorMessage = err?.message || 'Impossibile aggiornare il codice. Riprova.';
+      const rawError = extractErrorMessage(err);
+      const errorMessage = mapTrainerCodeChangeError(rawError);
       setPasswordError(errorMessage);
     }
-    */
   };
 
   const stats = [
@@ -172,15 +174,26 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               </div>
               <span className="text-xl font-bold">Personal Trainer</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onLogout}
-              className="gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Esci
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Admin"
+                className="gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLogout}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Esci
+              </Button>
+            </div>
           </div>
           
           {/* PT Code Display */}
@@ -263,12 +276,16 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
             })}
           </div>
 
-          {/* Tabbed Content: Clients and Personal Settings */}
+          {/* Tabbed Content: Clients, Bookings, and Personal Settings */}
           <Tabs defaultValue="clients" className="space-y-4">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsList className="grid w-full max-w-2xl grid-cols-3">
               <TabsTrigger value="clients" className="gap-2">
                 <Users className="h-4 w-4" />
                 I Miei Clienti
+              </TabsTrigger>
+              <TabsTrigger value="bookings" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Prenotazioni
               </TabsTrigger>
               <TabsTrigger value="personal" className="gap-2">
                 <Settings className="h-4 w-4" />
@@ -442,59 +459,72 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
               </Card>
             </TabsContent>
 
+            {/* Bookings Tab */}
+            <TabsContent value="bookings">
+              <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Prenotazioni
+                  </CardTitle>
+                  <CardDescription>
+                    Gestisci le tue prenotazioni e appuntamenti
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TrainerBookingsCalendar />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Personal Settings Tab */}
             <TabsContent value="personal">
               <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Lock className="h-5 w-5" />
-                    Impostazioni Personali
+                    Change Access Code
                   </CardTitle>
                   <CardDescription>
-                    Gestisci il tuo codice di accesso trainer
+                    Update your trainer access code for enhanced security
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleChangePassword} className="space-y-6">
-                    <div className="space-y-4 rounded-lg border border-border/50 bg-muted/30 p-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="current-password">Codice di Accesso Attuale</Label>
-                        <Input
-                          id="current-password"
-                          type="password"
-                          placeholder="Inserisci il codice attuale"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="h-11"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Il codice attuale è: <span className="font-mono font-semibold">12345</span>
-                        </p>
-                      </div>
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Access Code</Label>
+                      <Input
+                        id="currentPassword"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter your current access code"
+                        disabled={updateTrainerCodeMutation.isPending}
+                      />
+                    </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="new-password">Nuovo Codice di Accesso</Label>
-                        <Input
-                          id="new-password"
-                          type="password"
-                          placeholder="Inserisci il nuovo codice"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="h-11"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Access Code</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new access code (5-20 characters)"
+                        disabled={updateTrainerCodeMutation.isPending}
+                      />
+                    </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Conferma Nuovo Codice</Label>
-                        <Input
-                          id="confirm-password"
-                          type="password"
-                          placeholder="Conferma il nuovo codice"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="h-11"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm New Access Code</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new access code"
+                        disabled={updateTrainerCodeMutation.isPending}
+                      />
                     </div>
 
                     {passwordError && (
@@ -507,20 +537,24 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
                     {passwordSuccess && (
                       <Alert className="animate-in fade-in-50 border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400">
                         <CheckCircle2 className="h-4 w-4" />
-                        <AlertDescription>Codice di accesso aggiornato con successo!</AlertDescription>
+                        <AlertDescription>Access code updated successfully!</AlertDescription>
                       </Alert>
                     )}
 
-                    <Button type="submit" className="w-full h-11 text-base font-semibold">
-                      Aggiorna Codice di Accesso
+                    <Button
+                      type="submit"
+                      disabled={updateTrainerCodeMutation.isPending}
+                      className="w-full"
+                    >
+                      {updateTrainerCodeMutation.isPending ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Access Code'
+                      )}
                     </Button>
-
-                    <Alert className="border-primary/20 bg-primary/5">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        <strong>Nota:</strong> Dopo aver modificato il codice di accesso, dovrai utilizzare il nuovo codice per accedere alla prossima sessione.
-                      </AlertDescription>
-                    </Alert>
                   </form>
                 </CardContent>
               </Card>
@@ -528,21 +562,6 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
           </Tabs>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          © 2026. Built with love using{' '}
-          <a
-            href="https://caffeine.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-foreground transition-colors hover:text-primary"
-          >
-            caffeine.ai
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }

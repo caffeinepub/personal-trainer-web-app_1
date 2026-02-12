@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dumbbell, User, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Dumbbell, User, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { normalizeError, logErrorDetails } from '../utils/userFacingErrors';
 
 interface ClientLoginPageProps {
   onLoginSuccess: (username: string) => void;
@@ -22,7 +23,7 @@ export default function ClientLoginPage({
   const [username, setUsername] = useState('');
   const [codicePT, setCodicePT] = useState('');
   const [error, setError] = useState('');
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
 
   const loginMutation = useMutation({
     mutationFn: async ({ user, code }: { user: string; code: string }) => {
@@ -34,20 +35,23 @@ export default function ClientLoginPage({
       setError('');
       onLoginSuccess(user);
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      logErrorDetails(err, 'ClientLogin');
+      
+      const rawMessage = typeof err === 'object' && err !== null && 'message' in err 
+        ? String((err as any).message) 
+        : String(err);
+      
       let errorMessage = 'An error occurred. Please try again.';
       
-      if (err?.message) {
-        const msg = err.message;
-        if (msg.includes('Utente non trovato')) {
-          errorMessage = 'User not found. Please check your username or register.';
-        } else if (msg.includes('Codice PT non valido') || msg.includes('PT')) {
-          errorMessage = 'Invalid PT code. Please check the code provided by your trainer.';
-        } else if (msg.includes('Questo PT non esiste')) {
-          errorMessage = 'This PT code does not exist. Please verify with your trainer.';
-        } else {
-          errorMessage = msg;
-        }
+      if (rawMessage.includes('Utente non trovato')) {
+        errorMessage = 'User not found. Please check your username or register.';
+      } else if (rawMessage.includes('Codice PT non valido') || rawMessage.includes('PT')) {
+        errorMessage = 'Invalid PT code. Please check the code provided by your trainer.';
+      } else if (rawMessage.includes('Questo PT non esiste')) {
+        errorMessage = 'This PT code does not exist. Please verify with your trainer.';
+      } else {
+        errorMessage = normalizeError(err);
       }
       
       setError(errorMessage);
@@ -71,9 +75,10 @@ export default function ClientLoginPage({
     loginMutation.mutate({ user: username, code: codicePT });
   };
 
+  const isFormDisabled = isFetching || !actor || loginMutation.isPending;
+
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4">
           <div className="flex items-center gap-2">
@@ -85,7 +90,6 @@ export default function ClientLoginPage({
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex flex-1 items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Button
@@ -93,6 +97,7 @@ export default function ClientLoginPage({
             size="sm"
             onClick={onNavigateToTrainerLogin}
             className="mb-4 gap-2"
+            disabled={isFormDisabled}
           >
             <ArrowLeft className="h-4 w-4" />
             Torna indietro
@@ -118,7 +123,7 @@ export default function ClientLoginPage({
                     placeholder="Il tuo nome utente"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    disabled={loginMutation.isPending}
+                    disabled={isFormDisabled}
                     className="h-11"
                     autoFocus
                   />
@@ -132,7 +137,7 @@ export default function ClientLoginPage({
                     placeholder="Codice del tuo trainer"
                     value={codicePT}
                     onChange={(e) => setCodicePT(e.target.value)}
-                    disabled={loginMutation.isPending}
+                    disabled={isFormDisabled}
                     className="h-11"
                   />
                 </div>
@@ -147,11 +152,11 @@ export default function ClientLoginPage({
                 <Button
                   type="submit"
                   className="w-full h-11 text-base font-semibold"
-                  disabled={loginMutation.isPending}
+                  disabled={isFormDisabled}
                 >
                   {loginMutation.isPending ? (
                     <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Accesso in corso...
                     </>
                   ) : (
@@ -164,7 +169,8 @@ export default function ClientLoginPage({
                   <button
                     type="button"
                     onClick={onNavigateToRegistration}
-                    className="font-medium text-primary hover:underline"
+                    disabled={isFormDisabled}
+                    className="font-medium text-primary hover:underline disabled:opacity-50"
                   >
                     Registrati
                   </button>
@@ -175,7 +181,6 @@ export default function ClientLoginPage({
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
           © 2026. Built with love using{' '}

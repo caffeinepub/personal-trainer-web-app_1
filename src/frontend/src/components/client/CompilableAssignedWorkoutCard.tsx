@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
-import { Dumbbell, Save, AlertCircle, Play } from 'lucide-react';
+import { Dumbbell, Save, AlertCircle, Play, Edit } from 'lucide-react';
 import type { Workout, WorkoutLog, ExerciseLog } from '../../backend';
 import { hasPerSetWeights, formatSetWeights } from '../../utils/workoutSetWeights';
 
@@ -16,6 +16,7 @@ interface CompilableAssignedWorkoutCardProps {
   onSave: (log: WorkoutLog, workoutId: string) => Promise<void>;
   isSaving: boolean;
   onStart?: (workout: Workout) => void;
+  onEdit?: (workout: Workout) => void;
 }
 
 export default function CompilableAssignedWorkoutCard({
@@ -24,6 +25,7 @@ export default function CompilableAssignedWorkoutCard({
   onSave,
   isSaving,
   onStart,
+  onEdit,
 }: CompilableAssignedWorkoutCardProps) {
   const [exerciseValues, setExerciseValues] = useState<Record<number, { actualSets: string; actualReps: string; actualWeight: string }>>(
     workout.exercises.reduce((acc, _, idx) => {
@@ -133,17 +135,30 @@ export default function CompilableAssignedWorkoutCard({
               <CardDescription>Assigned by your trainer</CardDescription>
             </div>
           </div>
-          {onStart && (
-            <Button
-              onClick={() => onStart(workout)}
-              variant="default"
-              size="sm"
-              className="gap-2"
-            >
-              <Play className="h-4 w-4" />
-              Start
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {onEdit && (
+              <Button
+                onClick={() => onEdit(workout)}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
+            {onStart && (
+              <Button
+                onClick={() => onStart(workout)}
+                variant="default"
+                size="sm"
+                className="gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Start
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">

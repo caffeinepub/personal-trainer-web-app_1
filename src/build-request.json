@@ -1,101 +1,55 @@
 {
   "kind": "build_request",
-  "title": "Fix trainer access code login still rejecting code 12345",
+  "title": "Update light theme to beige background with black text",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix trainer login so entering the access code \"12345\" reliably authenticates and navigates into the trainer dashboard (Personal area) without showing the error \"Unable to authenticate. Please verify your access code.\"",
-      "target": "both",
+      "text": "Update the app light theme to use a beige background with black (or near-black) foreground text by adjusting the light-mode CSS theme tokens in `frontend/src/index.css` (the `:root` block). Ensure the main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) are beige-toned and that text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) resolve to black/near-black with accessible contrast.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "continua a non andare"
+          "e il beije col nero"
         ]
       },
       "acceptanceCriteria": [
-        "From the initial trainer login screen, submitting access code \"12345\" results in successful login and the trainer dashboard view is shown.",
-        "The error message \"Unable to authenticate. Please verify your access code.\" is not shown when the access code is correct.",
-        "Submitting an incorrect access code does not log in and shows a clear error state."
+        "In light mode, the page background and primary surfaces render in a beige tone (not pure white).",
+        "In light mode, default text renders as black or near-black across pages (login, dashboard, client dashboard) with good readability.",
+        "No UI areas remain unintentionally pure white due to theme tokens (except where explicitly intended, e.g., images)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure the frontend uses a backend actor that is fully ready for update calls before attempting trainer authentication (e.g., do not submit while the actor is still being fetched/initialized), and provide a deterministic initialization path so authentication is not intermittently rejected due to actor readiness/initialization issues.",
+      "text": "Align light-mode interactive/accent tokens in `frontend/src/index.css` with the beige/black theme so buttons, borders, inputs, rings, and muted/secondary surfaces remain consistent and readable (e.g., `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`). Keep the existing dark theme tokens unchanged unless they cause readability issues after the light-theme update.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "continua a non andare"
+          "e il beije col nero"
         ]
       },
       "acceptanceCriteria": [
-        "The trainer login submit button is disabled (or submission is blocked) until the backend actor is available and initialization steps required for authenticated flows are completed.",
-        "If the backend actor is null/unavailable, the UI shows a specific actionable error (not the generic \"Unable to authenticate\" message).",
-        "Repeated attempts with the correct code in the same session succeed consistently (no intermittent failures)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Improve trainer login error handling so the UI shows the most specific available backend error message category (wrong code vs service unavailable vs authorization), and avoid mapping all non-empty errors to the same generic \"Unable to authenticate\" message.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "continua a non andare"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the backend rejects due to incorrect access code (e.g., \"La password inserita non è corretta!\"), the UI displays an incorrect-code message in English.",
-        "If the backend/agent is unreachable or the actor cannot be created, the UI displays a service-unavailable message in English.",
-        "The generic message \"Unable to authenticate. Please verify your access code.\" is used only when no more specific category can be determined."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Update trainer login page user-facing copy to English (labels, placeholders, button text, loading text, helper text) while preserving functionality.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "continua a non andare"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All visible text on the trainer login page (including headings, labels, placeholders, buttons, separators, and loading text) is in English.",
-        "The trainer login page continues to function as before aside from copy changes."
+        "Primary buttons and their text have clear contrast in light mode (no low-contrast beige-on-beige or black-on-black combinations).",
+        "Borders/inputs are visible but subtle on beige backgrounds in light mode.",
+        "Dark mode appearance remains functionally unchanged (no regressions in readability or broken colors)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or anything in frontend/src/components/ui (these paths are immutable).",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add a migration file if a stable-state schema upgrade is required."
+    "Do not edit files under `frontend/src/components/ui` (compose them instead if needed).",
+    "Do not edit any paths listed in `frontend.immutablePaths` in SYSTEM_CONTEXT (including `frontend/src/main.tsx`, `frontend/src/hooks/useInternetIdentity.ts(x)`, and `frontend/src/hooks/useActor.ts`)."
   ],
   "nonGoals": [
-    "Implementing third-party authentication providers (only Internet Identity is supported).",
-    "Adding real-time features (WebSockets/chat/push).",
-    "Changing the trainer access code away from \"12345\" or adding a full password-change flow (unless required strictly to fix the login rejection bug)."
+    "Adding new application features beyond the color/theme update.",
+    "Changing authentication flow or backend logic."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ClientDashboardPage from './pages/ClientDashboardPage';
 import RegistrationPage from './pages/RegistrationPage';
 import ClientLoginPage from './pages/ClientLoginPage';
 
-const queryClient = new QueryClient();
-
 type UserType = 'trainer' | 'client' | null;
 type ViewType = 'trainer-login' | 'client-login' | 'registration' | 'dashboard';
 
 function App() {
+  const queryClient = useQueryClient();
   const [userType, setUserType] = useState<UserType>(null);
   const [currentView, setCurrentView] = useState<ViewType>('trainer-login');
   const [username, setUsername] = useState<string>('');
@@ -54,6 +53,7 @@ function App() {
     setUserType(null);
     setUsername('');
     setCurrentView('trainer-login');
+    // Clear all cached queries
     queryClient.clear();
   };
 
@@ -79,7 +79,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
@@ -88,37 +88,35 @@ function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-        <div className="min-h-screen bg-background">
-          {currentView === 'dashboard' && userType === 'trainer' && (
-            <DashboardPage onLogout={handleLogout} />
-          )}
-          {currentView === 'dashboard' && userType === 'client' && (
-            <ClientDashboardPage username={username} onLogout={handleLogout} />
-          )}
-          {currentView === 'trainer-login' && (
-            <LoginPage
-              onLoginSuccess={handleTrainerLoginSuccess}
-              onNavigateToClientLogin={handleNavigateToClientLogin}
-            />
-          )}
-          {currentView === 'client-login' && (
-            <ClientLoginPage
-              onLoginSuccess={handleClientLoginSuccess}
-              onNavigateToRegistration={handleNavigateToRegistration}
-              onNavigateToTrainerLogin={handleNavigateToTrainerLogin}
-            />
-          )}
-          {currentView === 'registration' && (
-            <RegistrationPage
-              onRegistrationSuccess={handleRegistrationSuccess}
-              onNavigateToLogin={handleNavigateToClientLogin}
-            />
-          )}
-        </div>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <div className="min-h-screen bg-background">
+        {currentView === 'dashboard' && userType === 'trainer' && (
+          <DashboardPage onLogout={handleLogout} />
+        )}
+        {currentView === 'dashboard' && userType === 'client' && (
+          <ClientDashboardPage username={username} onLogout={handleLogout} />
+        )}
+        {currentView === 'trainer-login' && (
+          <LoginPage
+            onLoginSuccess={handleTrainerLoginSuccess}
+            onNavigateToClientLogin={handleNavigateToClientLogin}
+          />
+        )}
+        {currentView === 'client-login' && (
+          <ClientLoginPage
+            onLoginSuccess={handleClientLoginSuccess}
+            onNavigateToRegistration={handleNavigateToRegistration}
+            onNavigateToTrainerLogin={handleNavigateToTrainerLogin}
+          />
+        )}
+        {currentView === 'registration' && (
+          <RegistrationPage
+            onRegistrationSuccess={handleRegistrationSuccess}
+            onNavigateToLogin={handleNavigateToClientLogin}
+          />
+        )}
+      </div>
+    </ThemeProvider>
   );
 }
 

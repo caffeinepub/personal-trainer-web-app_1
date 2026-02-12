@@ -3,46 +3,35 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [
-    "Reported that the current live/deployed Versione 16 still does not work (issue persists after deployment/build)."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-fix-trainer-login-so-entering-the-access-code-12345-reliably-authenticates-and-navigates-into-the-trainer-dashboard-personal-area-without-showing-the-error-unable-to-authenticate-please-verify-your-access-code",
-      "title": "Fix trainer login so entering the access code \"12345\" reliably authenticates and navigates into the trainer dashboard (Personal area) without showing the error \"Unable to authenticate. Please verify your access code.\"",
+      "id": "feature-update-the-app-light-theme-to-use-a-beige-background-with-black-or-near-black-foreground-text-by-adjusting-the-light-mode-css-theme-tokens-in-frontend-src-index-css-the-root-block-ensure-the-main-surfaces-background-card-popover-sidebar-are-beige-toned-and-that-text-tokens-foreground-card-foreground-popover-foreground-sidebar-foreground-resolve-to-black-near-black-with-accessible-contrast",
+      "title": "Update the app light theme to use a beige background with black (or near-black) foreground text by adjusting the light-mode CSS theme tokens in `frontend/src/index.css` (the `:root` block). Ensure the main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) are beige-toned and that text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) resolve to black/near-black with accessible contrast.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-ensure-the-frontend-uses-a-backend-actor-that-is-fully-ready-for-update-calls-before-attempting-trainer-authentication-e-g-do-not-submit-while-the-actor-is-still-being-fetched-initialized-and-provide-a-deterministic-initialization-path-so-authentication-is-not-intermittently-rejected-due-to-actor-readiness-initialization-issues",
-      "title": "Ensure the frontend uses a backend actor that is fully ready for update calls before attempting trainer authentication (e.g., do not submit while the actor is still being fetched/initialized), and provide a deterministic initialization path so authentication is not intermittently rejected due to actor readiness/initialization issues.",
+      "id": "feature-align-light-mode-interactive-accent-tokens-in-frontend-src-index-css-with-the-beige-black-theme-so-buttons-borders-inputs-rings-and-muted-secondary-surfaces-remain-consistent-and-readable-e-g-primary-primary-foreground-secondary-muted-accent-border-input-ring-keep-the-existing-dark-theme-tokens-unchanged-unless-they-cause-readability-issues-after-the-light-theme-update",
+      "title": "Align light-mode interactive/accent tokens in `frontend/src/index.css` with the beige/black theme so buttons, borders, inputs, rings, and muted/secondary surfaces remain consistent and readable (e.g., `--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`). Keep the existing dark theme tokens unchanged unless they cause readability issues after the light-theme update.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-improve-trainer-login-error-handling-so-the-ui-shows-the-most-specific-available-backend-error-message-category-wrong-code-vs-service-unavailable-vs-authorization-and-avoid-mapping-all-non-empty-errors-to-the-same-generic-unable-to-authenticate-message",
-      "title": "Improve trainer login error handling so the UI shows the most specific available backend error message category (wrong code vs service unavailable vs authorization), and avoid mapping all non-empty errors to the same generic \"Unable to authenticate\" message.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-trainer-login-page-user-facing-copy-to-english-labels-placeholders-button-text-loading-text-helper-text-while-preserving-functionality",
-      "title": "Update trainer login page user-facing copy to English (labels, placeholders, button text, loading text, helper text) while preserving functionality.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix trainer access code login still rejecting code 12345",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Update interface colors to beige with black (instead of all-white)",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Update light theme to beige background with black text",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dumbbell, Lock, AlertCircle, Users, Loader2 } from 'lucide-react';
-import { extractErrorMessage, mapTrainerAuthError } from '../utils/trainerAuthErrors';
+import { normalizeError, logErrorDetails } from '../utils/userFacingErrors';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -24,7 +24,6 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
       if (!actor) {
         throw new Error('SERVICE_UNAVAILABLE');
       }
-      // Normalize the password by trimming whitespace
       const normalizedPwd = pwd.trim();
       await actor.authenticateTrainer(normalizedPwd);
     },
@@ -33,29 +32,21 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
       onLoginSuccess();
     },
     onError: (err: unknown) => {
-      // Extract the raw error message
-      const rawError = extractErrorMessage(err);
-      
-      // Map to user-friendly message
-      const userMessage = mapTrainerAuthError(rawError);
-      
+      logErrorDetails(err, 'TrainerLogin');
+      const userMessage = normalizeError(err);
       setError(userMessage);
     }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Clear any previous errors
     setError('');
     
-    // Check if actor is available
-    if (!actor) {
-      setError('Service is not available. Please wait a moment and try again.');
+    if (!actor || isFetching) {
+      setError('Service is temporarily unavailable. Please wait a moment and try again.');
       return;
     }
     
-    // Validate input
     if (!password.trim()) {
       setError('Please enter your access code to continue.');
       return;
@@ -64,13 +55,11 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
     loginMutation.mutate(password);
   };
 
-  // Determine if the form should be disabled
   const isFormDisabled = isFetching || !actor || loginMutation.isPending;
   const isInitializing = isFetching || !actor;
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4">
           <div className="flex items-center gap-2">
@@ -82,7 +71,6 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex flex-1 items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
@@ -170,7 +158,6 @@ export default function LoginPage({ onLoginSuccess, onNavigateToClientLogin }: L
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
           © 2026. Built with love using{' '}

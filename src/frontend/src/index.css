@@ -5,38 +5,38 @@
 @layer base {
     :root {
         --radius: 0.75rem;
-        --background: 0.98 0 0;
-        --foreground: 0.15 0 0;
-        --card: 1 0 0;
-        --card-foreground: 0.15 0 0;
-        --popover: 1 0 0;
-        --popover-foreground: 0.15 0 0;
-        --primary: 0.55 0.18 25;
+        --background: 0.92 0.03 60;
+        --foreground: 0.20 0.01 40;
+        --card: 0.94 0.03 60;
+        --card-foreground: 0.20 0.01 40;
+        --popover: 0.94 0.03 60;
+        --popover-foreground: 0.20 0.01 40;
+        --primary: 0.50 0.08 45;
         --primary-foreground: 0.98 0 0;
-        --secondary: 0.96 0 0;
-        --secondary-foreground: 0.15 0 0;
-        --muted: 0.96 0 0;
-        --muted-foreground: 0.50 0 0;
-        --accent: 0.65 0.20 35;
-        --accent-foreground: 0.98 0 0;
-        --destructive: 0.58 0.24 27;
+        --secondary: 0.88 0.03 55;
+        --secondary-foreground: 0.20 0.01 40;
+        --muted: 0.90 0.03 58;
+        --muted-foreground: 0.40 0.02 40;
+        --accent: 0.86 0.04 50;
+        --accent-foreground: 0.20 0.01 40;
+        --destructive: 0.55 0.20 25;
         --destructive-foreground: 0.98 0 0;
-        --border: 0.90 0 0;
-        --input: 0.90 0 0;
-        --ring: 0.55 0.18 25;
-        --chart-1: 0.65 0.22 280;
-        --chart-2: 0.60 0.18 200;
-        --chart-3: 0.70 0.20 160;
-        --chart-4: 0.75 0.22 45;
-        --chart-5: 0.68 0.20 25;
-        --sidebar: 0.98 0 0;
-        --sidebar-foreground: 0.15 0 0;
-        --sidebar-primary: 0.55 0.18 25;
+        --border: 0.82 0.03 50;
+        --input: 0.82 0.03 50;
+        --ring: 0.50 0.08 45;
+        --chart-1: 0.60 0.10 200;
+        --chart-2: 0.55 0.08 180;
+        --chart-3: 0.65 0.12 160;
+        --chart-4: 0.70 0.10 45;
+        --chart-5: 0.58 0.08 30;
+        --sidebar: 0.94 0.03 60;
+        --sidebar-foreground: 0.20 0.01 40;
+        --sidebar-primary: 0.50 0.08 45;
         --sidebar-primary-foreground: 0.98 0 0;
-        --sidebar-accent: 0.96 0 0;
-        --sidebar-accent-foreground: 0.15 0 0;
-        --sidebar-border: 0.90 0 0;
-        --sidebar-ring: 0.55 0.18 25;
+        --sidebar-accent: 0.90 0.03 58;
+        --sidebar-accent-foreground: 0.20 0.01 40;
+        --sidebar-border: 0.82 0.03 50;
+        --sidebar-ring: 0.50 0.08 45;
     }
 
     .dark {

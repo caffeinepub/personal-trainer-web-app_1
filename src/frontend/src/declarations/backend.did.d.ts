@@ -11,6 +11,24 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export interface BodyWeightEntry { 'weight' : bigint, 'date' : string }
+export interface Booking {
+  'id' : bigint,
+  'clientName' : string,
+  'clientEmail' : string,
+  'trainerPrincipal' : Principal,
+  'durationMinutes' : bigint,
+  'notes' : string,
+  'isConfirmed' : boolean,
+  'dateTime' : Time,
+}
+export interface BookingUpdate {
+  'clientName' : string,
+  'clientEmail' : string,
+  'durationMinutes' : bigint,
+  'notes' : string,
+  'isConfirmed' : boolean,
+  'dateTime' : Time,
+}
 export interface ClientProfile {
   'username' : string,
   'emailOrNickname' : [] | [string],
@@ -33,6 +51,7 @@ export interface ExerciseLog {
   'repetitions' : bigint,
 }
 export interface ExercisePerformance { 'date' : string, 'exercise' : Exercise }
+export type Time = bigint;
 export interface UserProfile {
   'username' : string,
   'role' : string,
@@ -71,6 +90,7 @@ export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'authenticateClient' : ActorMethod<[string, string], undefined>,
   'authenticateTrainer' : ActorMethod<[string], bigint>,
+  'createBooking' : ActorMethod<[BookingUpdate], bigint>,
   'createClientWorkout' : ActorMethod<
     [string, string, Array<Exercise>, string],
     undefined
@@ -79,13 +99,16 @@ export interface _SERVICE {
     [string, Array<Exercise>, string],
     undefined
   >,
+  'deleteBooking' : ActorMethod<[bigint], undefined>,
   'getBodyWeightHistory' : ActorMethod<[string], Array<BodyWeightEntry>>,
+  'getBookingsByDateRange' : ActorMethod<[Time, Time], Array<Booking>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getClientInfo' : ActorMethod<[string], [string, string, [] | [string]]>,
   'getClientProfile' : ActorMethod<[string], ClientProfile>,
   'getClientProgress' : ActorMethod<[string], Array<WorkoutProgress>>,
   'getClientsForTrainer' : ActorMethod<[], Array<ClientProfile>>,
+  'getConfirmedAppointmentsForClient' : ActorMethod<[], Array<Booking>>,
   'getExercisePerformanceHistory' : ActorMethod<
     [string],
     Array<ExercisePerformance>
@@ -100,13 +123,16 @@ export interface _SERVICE {
     [string, string, [] | [string], bigint],
     undefined
   >,
+  'requestAppointment' : ActorMethod<
+    [string, string, Time, bigint, string],
+    bigint
+  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setClientHeight' : ActorMethod<[string, bigint], undefined>,
+  'updateBooking' : ActorMethod<[bigint, BookingUpdate], undefined>,
   'updateClientEmail' : ActorMethod<[string, string], undefined>,
-  'updateClientWorkout' : ActorMethod<
-    [string, string, Array<Exercise>, string],
-    undefined
-  >,
+  'updateTrainerCode' : ActorMethod<[string, string], undefined>,
+  'updateWorkout' : ActorMethod<[string, Array<Exercise>, string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

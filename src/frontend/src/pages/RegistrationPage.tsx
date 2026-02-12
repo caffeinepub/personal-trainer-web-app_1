@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dumbbell, UserPlus, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Dumbbell, UserPlus, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { normalizeError, logErrorDetails } from '../utils/userFacingErrors';
 
 interface RegistrationPageProps {
   onRegistrationSuccess: (username: string) => void;
@@ -21,20 +22,18 @@ export default function RegistrationPage({
   const [codicePT, setCodicePT] = useState('');
   const [emailOrNickname, setEmailOrNickname] = useState('');
   const [error, setError] = useState('');
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
 
   const registrationMutation = useMutation({
     mutationFn: async ({ user, code, email }: { user: string; code: string; email: string }) => {
       if (!actor) throw new Error('Backend not available. Please try again.');
       
-      // Convert PT code to number for backend validation
       const trainerCode = parseInt(code, 10);
       if (isNaN(trainerCode) || trainerCode < 10000 || trainerCode >= 100000) {
         throw new Error('PT code must be a 5-digit number.');
       }
       
       await actor.registerClient(user, code, email || null, BigInt(trainerCode));
-      // After registration, authenticate the client
       await actor.authenticateClient(user, code);
       return user;
     },
@@ -42,22 +41,25 @@ export default function RegistrationPage({
       setError('');
       onRegistrationSuccess(user);
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      logErrorDetails(err, 'ClientRegistration');
+      
+      const rawMessage = typeof err === 'object' && err !== null && 'message' in err 
+        ? String((err as any).message) 
+        : String(err);
+      
       let errorMessage = 'An error occurred. Please try again.';
       
-      if (err?.message) {
-        const msg = err.message;
-        if (msg.includes('Nome utente già esistente')) {
-          errorMessage = 'Username already exists. Please choose another one.';
-        } else if (msg.includes('deve essere tra 4 e 20 caratteri')) {
-          errorMessage = 'Username must be between 4 and 20 characters.';
-        } else if (msg.includes('Questo PT non esiste')) {
-          errorMessage = 'This PT code does not exist. Please verify with your trainer.';
-        } else if (msg.includes('Codice trainer non valido') || msg.includes('5-digit')) {
-          errorMessage = 'Invalid PT code. Please enter a valid 5-digit code.';
-        } else {
-          errorMessage = msg;
-        }
+      if (rawMessage.includes('Nome utente già esistente')) {
+        errorMessage = 'Username already exists. Please choose another one.';
+      } else if (rawMessage.includes('deve essere tra 4 e 20 caratteri')) {
+        errorMessage = 'Username must be between 4 and 20 characters.';
+      } else if (rawMessage.includes('Questo PT non esiste')) {
+        errorMessage = 'This PT code does not exist. Please verify with your trainer.';
+      } else if (rawMessage.includes('Codice trainer non valido') || rawMessage.includes('5-digit')) {
+        errorMessage = 'Invalid PT code. Please enter a valid 5-digit code.';
+      } else {
+        errorMessage = normalizeError(err);
       }
       
       setError(errorMessage);
@@ -86,9 +88,10 @@ export default function RegistrationPage({
     registrationMutation.mutate({ user: username, code: codicePT, email: emailOrNickname });
   };
 
+  const isFormDisabled = isFetching || !actor || registrationMutation.isPending;
+
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
       <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4">
           <div className="flex items-center gap-2">
@@ -100,7 +103,6 @@ export default function RegistrationPage({
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex flex-1 items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Button
@@ -108,6 +110,7 @@ export default function RegistrationPage({
             size="sm"
             onClick={onNavigateToLogin}
             className="mb-4 gap-2"
+            disabled={isFormDisabled}
           >
             <ArrowLeft className="h-4 w-4" />
             Torna al login
@@ -133,7 +136,7 @@ export default function RegistrationPage({
                     placeholder="Scegli un nome utente (4-20 caratteri)"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    disabled={registrationMutation.isPending}
+                    disabled={isFormDisabled}
                     className="h-11"
                     autoFocus
                   />
@@ -147,7 +150,7 @@ export default function RegistrationPage({
                     placeholder="Codice fornito dal tuo trainer (5 cifre)"
                     value={codicePT}
                     onChange={(e) => setCodicePT(e.target.value)}
-                    disabled={registrationMutation.isPending}
+                    disabled={isFormDisabled}
                     className="h-11"
                     maxLength={5}
                   />
@@ -161,7 +164,7 @@ export default function RegistrationPage({
                     placeholder="La tua email o un nickname"
                     value={emailOrNickname}
                     onChange={(e) => setEmailOrNickname(e.target.value)}
-                    disabled={registrationMutation.isPending}
+                    disabled={isFormDisabled}
                     className="h-11"
                   />
                 </div>
@@ -176,11 +179,11 @@ export default function RegistrationPage({
                 <Button
                   type="submit"
                   className="w-full h-11 text-base font-semibold"
-                  disabled={registrationMutation.isPending}
+                  disabled={isFormDisabled}
                 >
                   {registrationMutation.isPending ? (
                     <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Registrazione in corso...
                     </>
                   ) : (
@@ -193,7 +196,8 @@ export default function RegistrationPage({
                   <button
                     type="button"
                     onClick={onNavigateToLogin}
-                    className="font-medium text-primary hover:underline"
+                    disabled={isFormDisabled}
+                    className="font-medium text-primary hover:underline disabled:opacity-50"
                   >
                     Accedi
                   </button>
@@ -204,7 +208,6 @@ export default function RegistrationPage({
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
           © 2026. Built with love using{' '}

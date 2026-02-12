@@ -1,40 +1,38 @@
 import Runtime "mo:core/Runtime";
-import Array "mo:core/Array";
 import Map "mo:core/Map";
+import Array "mo:core/Array";
 import Text "mo:core/Text";
-import Iter "mo:core/Iter";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
+import Time "mo:core/Time";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
-// Run migration on upgrade
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  type WorkoutProgress = {
+  public type WorkoutProgress = {
     date : Text;
     exercises : [Exercise];
     comments : Text;
   };
 
-  type Exercise = {
+  public type Exercise = {
     name : Text;
     sets : Nat;
     repetitions : Nat;
-    setWeights : [Nat]; // Set-weights - array in kg per set
-    restTime : Nat; // New field: rest time in seconds
+    setWeights : [Nat];
+    restTime : Nat;
   };
 
-  // Exercise performance (per exercise, per workout/measurement)
   type ExercisePerformance = {
     date : Text;
     exercise : Exercise;
   };
 
-  type Workout = {
+  public type Workout = {
     name : Text;
     exercises : [Exercise];
     comments : Text;
@@ -42,32 +40,31 @@ actor {
     clientUsername : Text;
   };
 
-  // Bodyweight entry with date
-  type BodyWeightEntry = {
+  public type BodyWeightEntry = {
     date : Text;
     weight : Nat;
   };
 
-  type Client = {
+  public type Client = {
     username : Text;
     codicePT : Text;
     emailOrNickname : ?Text;
-    progressData : [WorkoutProgress]; // Retain
+    progressData : [WorkoutProgress];
     principal : ?Principal;
     bodyWeightHistory : [BodyWeightEntry];
     exercisePerformanceHistory : [ExercisePerformance];
-    trainerCode : Text; // To link client to trainer's PT code
+    trainerCode : Text;
     height : ?Nat;
   };
 
-  type ClientProfile = {
+  public type ClientProfile = {
     username : Text;
     emailOrNickname : ?Text;
   };
 
   public type UserProfile = {
     username : Text;
-    role : Text; // "trainer" or "client"
+    role : Text;
     codicePT : ?Text;
     emailOrNickname : ?Text;
   };
@@ -76,11 +73,11 @@ actor {
     name : Text;
     sets : Nat;
     repetitions : Nat;
-    setWeights : [Nat]; // Set-weights - array in kg per set
+    setWeights : [Nat];
     actualSets : Nat;
     actualRepetitions : Nat;
-    actualSetWeights : [Nat]; // Actual set weights used
-    restTime : Nat; // Add rest time also to exercise log
+    actualSetWeights : [Nat];
+    restTime : Nat;
   };
 
   public type WorkoutLog = {
@@ -93,6 +90,26 @@ actor {
     clientNotes : ?Text;
   };
 
+  public type Booking = {
+    id : Nat;
+    trainerPrincipal : Principal;
+    clientName : Text;
+    clientEmail : Text;
+    dateTime : Time.Time;
+    durationMinutes : Nat;
+    notes : Text;
+    isConfirmed : Bool;
+  };
+
+  public type BookingUpdate = {
+    clientName : Text;
+    clientEmail : Text;
+    dateTime : Time.Time;
+    durationMinutes : Nat;
+    notes : Text;
+    isConfirmed : Bool;
+  };
+
   let clients = Map.empty<Text, Client>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   let principalToUsername = Map.empty<Principal, Text>();
@@ -101,9 +118,11 @@ actor {
   let workouts = Map.empty<Text, Workout>();
   let workoutLogs = Map.empty<Text, WorkoutLog>();
 
-  let correctTrainerPassword = "12345";
+  let bookings = Map.empty<Nat, Booking>();
+  var nextBookingId = 1;
 
-  // Utility functions
+  var correctTrainerPassword : Text = "12345";
+
   func isTrainerPasswordCorrect(password : Text) : Bool {
     password == correctTrainerPassword;
   };
@@ -124,7 +143,6 @@ actor {
     trainerTokens.containsKey(caller) or principalToUsername.containsKey(caller);
   };
 
-  // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not isAuthenticatedUser(caller)) {
       Runtime.trap("Unauthorized: Only authenticated users can view profiles");
@@ -141,7 +159,6 @@ actor {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
 
-    // If trainer is viewing a client profile, verify the client belongs to them
     if (caller != user and isTrainer(caller)) {
       let trainerCode = switch (trainerCodes.get(caller)) {
         case (?code) { code };
@@ -150,7 +167,6 @@ actor {
         };
       };
 
-      // Get the username for the user principal
       switch (principalToUsername.get(user)) {
         case (?username) {
           switch (clients.get(username)) {
@@ -176,7 +192,22 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Trainer Code Management
+  public shared ({ caller }) func updateTrainerCode(currentCode : Text, newCode : Text) : async () {
+    if (not isTrainer(caller)) {
+      Runtime.trap("Unauthorized: Only authenticated trainers can update their code");
+    };
+
+    if (not Text.equal(currentCode, correctTrainerPassword)) {
+      Runtime.trap("The current code is incorrect.");
+    };
+
+    if (newCode.size() < 5 or newCode.size() > 20) {
+      Runtime.trap("The new code should be at least 5 characters long and should not exceed 20 characters.");
+    };
+
+    correctTrainerPassword := newCode;
+  };
+
   func generateUnique5DigitCode() : Nat {
     let randomNat64 : Nat64 = 12345;
     let randomNat : Nat = Nat64.toNat(randomNat64);
@@ -185,13 +216,11 @@ actor {
 
   public shared ({ caller }) func authenticateTrainer(password : Text) : async Nat {
     if (not isTrainerPasswordCorrect(password)) {
-      Runtime.trap("La password inserita non è corretta!");
+      Runtime.trap("Wrong access code. Please verify your credentials. ");
     };
 
-    // Add caller to trainerTokens
     trainerTokens.add(caller, true);
 
-    // Save trainer profile
     let trainerProfile : UserProfile = {
       username = "Trainer";
       role = "trainer";
@@ -200,7 +229,6 @@ actor {
     };
     userProfiles.add(caller, trainerProfile);
 
-    // Assign or retrieve unique PT code
     let ptCode = switch (trainerCodes.get(caller)) {
       case (?code) { code };
       case (null) {
@@ -227,7 +255,6 @@ actor {
     };
   };
 
-  // Client Registration/Authentication
   public shared ({ caller }) func registerClient(
     username : Text,
     codicePT : Text,
@@ -242,12 +269,10 @@ actor {
       Runtime.trap("Il nome utente deve essere tra 4 e 20 caratteri");
     };
 
-    // Validate trainer code is 5 digits
     if (trainerCode < 10000 or trainerCode >= 100000) {
       Runtime.trap("Codice trainer non valido.");
     };
 
-    // Find trainer with this code
     let associatedTrainer = trainerCodes.entries().find(func(entry) { entry.1 == trainerCode });
     switch (associatedTrainer) {
       case (null) {
@@ -280,17 +305,14 @@ actor {
           Runtime.trap("Codice PT non valido. Ricontrolla i dati inseriti.");
         };
 
-        // Link principal to username
         principalToUsername.add(caller, username);
 
-        // Update client with principal
         let updatedClient = {
           client with
           principal = ?caller;
         };
         clients.add(username, updatedClient);
 
-        // Save client profile
         let clientProfile : UserProfile = {
           username = username;
           role = "client";
@@ -302,7 +324,6 @@ actor {
     };
   };
 
-  // Trainer-facing Client Management
   public query ({ caller }) func getClientsForTrainer() : async [ClientProfile] {
     if (not isTrainer(caller)) {
       Runtime.trap("Unauthorized: Only trainers can fetch clients list");
@@ -319,7 +340,6 @@ actor {
       func(client) { client.trainerCode == trainerCode.toText() }
     );
 
-    // Map to ClientProfile to avoid exposing codicePT
     trainerClients.map<Client, ClientProfile>(
       func(client) {
         {
@@ -385,7 +405,6 @@ actor {
         };
         clients.add(username, updatedClient);
 
-        // Update UserProfile if client has a principal
         switch (client.principal) {
           case (?clientPrincipal) {
             switch (userProfiles.get(clientPrincipal)) {
@@ -405,7 +424,6 @@ actor {
     };
   };
 
-  // Progress and Info Management
   public shared ({ caller }) func addWorkoutProgress(
     username : Text,
     progress : WorkoutProgress,
@@ -482,7 +500,6 @@ actor {
         };
       };
     } else {
-      // Trainer is viewing progress - verify client belongs to trainer
       let trainerCode = switch (trainerCodes.get(caller)) {
         case (?code) { code };
         case (null) {
@@ -532,7 +549,6 @@ actor {
         };
       };
     } else {
-      // Trainer is viewing info - verify client belongs to trainer
       let trainerCode = switch (trainerCodes.get(caller)) {
         case (?code) { code };
         case (null) {
@@ -562,7 +578,6 @@ actor {
     };
   };
 
-  // Bodyweight, Height, Exercise Performances
   public shared ({ caller }) func setClientHeight(username : Text, height : Nat) : async () {
     let hasTrainerToken = trainerTokens.containsKey(caller);
     let callerUsername = principalToUsername.get(caller);
@@ -815,17 +830,16 @@ actor {
     };
   };
 
-  // EXTENDED WORKOUT SUPPORT
-  // =========================
-
-  // Only trainers can create workouts for clients
   public shared ({ caller }) func createClientWorkout(
     clientUsername : Text,
     name : Text,
     exercises : [Exercise],
     comments : Text,
   ) : async () {
-    // Trainers only
+    if (not isTrainer(caller)) {
+      Runtime.trap("Unauthorized: Only trainers can create client workouts");
+    };
+
     let trainerCode = switch (trainerCodes.get(caller)) {
       case (?code) { code };
       case (null) {
@@ -833,7 +847,6 @@ actor {
       };
     };
 
-    // Verify the client belongs to this trainer
     switch (clients.get(clientUsername)) {
       case (null) {
         Runtime.trap("Utente non trovato.");
@@ -853,11 +866,9 @@ actor {
       comments;
     };
 
-    // Use clientUsername + "_" + name as unique key
     workouts.add(clientUsername.concat("_").concat(name), newWorkout);
   };
 
-  // Clients can create their own workouts (with empty creator field)
   public shared ({ caller }) func createOwnWorkout(
     name : Text,
     exercises : [Exercise],
@@ -866,7 +877,7 @@ actor {
     let callerUsername = switch (principalToUsername.get(caller)) {
       case (?username) { username };
       case (null) {
-        Runtime.trap("You must be authenticated as a client to create your own workout");
+        Runtime.trap("Unauthorized: You must be authenticated as a client to create your own workout");
       };
     };
 
@@ -881,44 +892,58 @@ actor {
     workouts.add(callerUsername.concat("_").concat(name), newWorkout);
   };
 
-  public shared ({ caller }) func updateClientWorkout(
-    clientUsername : Text,
-    workoutName : Text,
+  public shared ({ caller }) func updateWorkout(
+    workoutId : Text,
     exercises : [Exercise],
     comments : Text,
   ) : async () {
-    // Only trainers can update workouts for clients
-    let trainerCode = switch (trainerCodes.get(caller)) {
-      case (?code) { code };
+    switch (workouts.get(workoutId)) {
       case (null) {
-        Runtime.trap("No PT code for this trainer.");
-      };
-    };
-
-    // Verify the client belongs to this trainer
-    switch (clients.get(clientUsername)) {
-      case (null) {
-        Runtime.trap("Utente non trovato.");
-      };
-      case (?client) {
-        if (not isClientOwnedByTrainer(client, trainerCode)) {
-          Runtime.trap("Unauthorized: You can only update workouts for your own clients");
-        };
-      };
-    };
-
-    switch (workouts.get(clientUsername.concat("_").concat(workoutName))) {
-      case (null) {
-        Runtime.trap("Workout not found for this client");
+        Runtime.trap("Workout non trovato.");
       };
       case (?existingWorkout) {
+        let hasTrainerToken = trainerTokens.containsKey(caller);
+        let callerUsername = principalToUsername.get(caller);
+
+        var authorized = false;
+
+        if (not hasTrainerToken) {
+          switch (callerUsername) {
+            case (?uname) {
+              if (uname == existingWorkout.clientUsername) {
+                authorized := true;
+              };
+            };
+            case (null) { /* Not authenticated as client */ };
+          };
+        } else {
+          let trainerCode = switch (trainerCodes.get(caller)) {
+            case (?code) { code };
+            case (null) {
+              Runtime.trap("No PT code for this trainer.");
+            };
+          };
+
+          switch (clients.get(existingWorkout.clientUsername)) {
+            case (?client) {
+              if (isClientOwnedByTrainer(client, trainerCode)) {
+                authorized := true;
+              };
+            };
+            case (null) { /* Client not found */ };
+          };
+        };
+
+        if (not authorized) {
+          Runtime.trap("Unauthorized: You can only edit your own workouts or workouts for your clients");
+        };
+
         let updatedWorkout : Workout = {
           existingWorkout with
           exercises;
           comments;
         };
-
-        workouts.add(clientUsername.concat("_").concat(workoutName), updatedWorkout);
+        workouts.add(workoutId, updatedWorkout);
       };
     };
   };
@@ -1081,5 +1106,176 @@ actor {
 
     let logsArray = workoutLogs.values().toArray();
     logsArray.filter(func(log) { log.clientUsername == username });
+  };
+
+  public shared ({ caller }) func createBooking(booking : BookingUpdate) : async Nat {
+    if (not isTrainer(caller)) {
+      Runtime.trap("Unauthorized: Only trainers can create bookings");
+    };
+
+    let newBooking : Booking = {
+      id = nextBookingId;
+      trainerPrincipal = caller;
+      clientName = booking.clientName;
+      clientEmail = booking.clientEmail;
+      dateTime = booking.dateTime;
+      durationMinutes = booking.durationMinutes;
+      notes = booking.notes;
+      isConfirmed = booking.isConfirmed;
+    };
+
+    bookings.add(nextBookingId, newBooking);
+    let bookingId = nextBookingId;
+    nextBookingId += 1;
+    bookingId;
+  };
+
+  public query ({ caller }) func getBookingsByDateRange(
+    startTime : Time.Time,
+    endTime : Time.Time,
+  ) : async [Booking] {
+    if (not isTrainer(caller)) {
+      Runtime.trap("Unauthorized: Only trainers can access bookings");
+    };
+
+    let filteredBookings = bookings.values().toArray().filter(
+      func(booking) {
+        booking.trainerPrincipal == caller and
+        booking.dateTime >= startTime and booking.dateTime <= endTime
+      }
+    );
+
+    filteredBookings;
+  };
+
+  public shared ({ caller }) func updateBooking(
+    bookingId : Nat,
+    updatedBooking : BookingUpdate,
+  ) : async () {
+    if (not isTrainer(caller)) {
+      Runtime.trap("Unauthorized: Only trainers can update bookings");
+    };
+
+    switch (bookings.get(bookingId)) {
+      case (?existingBooking) {
+        if (existingBooking.trainerPrincipal != caller) {
+          Runtime.trap("Unauthorized: You can only update your own bookings");
+        };
+
+        let newBooking : Booking = {
+          id = bookingId;
+          trainerPrincipal = caller;
+          clientName = updatedBooking.clientName;
+          clientEmail = updatedBooking.clientEmail;
+          dateTime = updatedBooking.dateTime;
+          durationMinutes = updatedBooking.durationMinutes;
+          notes = updatedBooking.notes;
+          isConfirmed = updatedBooking.isConfirmed;
+        };
+        bookings.add(bookingId, newBooking);
+      };
+      case (null) { Runtime.trap("Booking not found") };
+    };
+  };
+
+  public shared ({ caller }) func deleteBooking(bookingId : Nat) : async () {
+    if (not isTrainer(caller)) {
+      Runtime.trap("Unauthorized: Only trainers can delete bookings");
+    };
+
+    switch (bookings.get(bookingId)) {
+      case (?existingBooking) {
+        if (existingBooking.trainerPrincipal != caller) {
+          Runtime.trap("Unauthorized: You can only delete your own bookings");
+        };
+        bookings.remove(bookingId);
+      };
+      case (null) { Runtime.trap("Booking not found") };
+    };
+  };
+
+  public shared ({ caller }) func requestAppointment(
+    clientName : Text,
+    clientEmail : Text,
+    dateTime : Time.Time,
+    durationMinutes : Nat,
+    notes : Text,
+  ) : async Nat {
+    let callerUsername = switch (principalToUsername.get(caller)) {
+      case (null) {
+        Runtime.trap("Unauthorized: Only authenticated clients can request appointments");
+      };
+      case (?username) { username };
+    };
+
+    let clientData = switch (clients.get(callerUsername)) {
+      case (null) {
+        Runtime.trap("Client data not found for the authenticated client");
+      };
+      case (?data) { data };
+    };
+
+    let trainerPrincipalText = clientData.trainerCode;
+    let trainerPrincipalNat = switch (Nat.fromText(trainerPrincipalText)) {
+      case (null) {
+        Runtime.trap("Invalid trainer code format");
+      };
+      case (?code) { code };
+    };
+
+    let trainerPrincipal = switch (trainerCodes.entries().find(func(entry) { entry.1 == trainerPrincipalNat })) {
+      case (null) { Runtime.trap("Trainer not found for the given trainer code") };
+      case (?entry) { entry.0 };
+    };
+
+    let newBooking : Booking = {
+      id = nextBookingId;
+      trainerPrincipal;
+      clientName;
+      clientEmail;
+      dateTime;
+      durationMinutes;
+      notes;
+      isConfirmed = false;
+    };
+
+    bookings.add(nextBookingId, newBooking);
+
+    let bookingId = nextBookingId;
+    nextBookingId += 1;
+    bookingId;
+  };
+
+  public query ({ caller }) func getConfirmedAppointmentsForClient() : async [Booking] {
+    let callerUsername = switch (principalToUsername.get(caller)) {
+      case (null) {
+        Runtime.trap("Unauthorized: Only authenticated clients can fetch confirmed appointments");
+      };
+      case (?username) { username };
+    };
+
+    let clientData = switch (clients.get(callerUsername)) {
+      case (null) {
+        Runtime.trap("Client data not found for the authenticated client");
+      };
+      case (?data) { data };
+    };
+
+    let trainerPrincipalText = clientData.trainerCode;
+    let trainerPrincipalNat = switch (Nat.fromText(trainerPrincipalText)) {
+      case (null) {
+        Runtime.trap("Invalid trainer code format");
+      };
+      case (?code) { code };
+    };
+
+    let trainerPrincipal = switch (trainerCodes.entries().find(func(entry) { entry.1 == trainerPrincipalNat })) {
+      case (null) { Runtime.trap("Trainer not found for the given trainer code") };
+      case (?entry) { entry.0 };
+    };
+
+    bookings.values().toArray().filter(func(booking) {
+      booking.clientName == callerUsername and booking.isConfirmed and booking.trainerPrincipal == trainerPrincipal
+    });
   };
 };

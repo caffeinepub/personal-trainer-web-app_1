@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, Plus, Trash2 } from 'lucide-react';
-import { useCreateWorkout, useCreateOwnWorkout, useUpdateClientWorkout } from '../../hooks/useQueries';
+import { useCreateClientWorkout, useCreateOwnWorkout, useUpdateWorkout } from '../../hooks/useQueries';
 import type { Exercise, Workout } from '../../backend';
 import { normalizeSetWeights, validateSetWeights, convertSetWeightsToBigInt } from '../../utils/workoutSetWeights';
 import { normalizeRestTimes, validateRestTimes, convertRestTimesToBigInt } from '../../utils/workoutRestTimes';
@@ -35,9 +35,9 @@ export default function WorkoutBuilder({ clientUsername, onSuccess, mode = 'trai
   ]);
   const [error, setError] = useState('');
 
-  const createWorkoutMutation = useCreateWorkout();
+  const createClientWorkoutMutation = useCreateClientWorkout();
   const createOwnWorkoutMutation = useCreateOwnWorkout();
-  const updateWorkoutMutation = useUpdateClientWorkout();
+  const updateWorkoutMutation = useUpdateWorkout();
 
   // Prefill form when editing
   useEffect(() => {
@@ -155,85 +155,79 @@ export default function WorkoutBuilder({ clientUsername, onSuccess, mode = 'trai
       }
     }
 
-    // Build exercises array with muscle group in name
-    const backendExercises: Exercise[] = exercises.map(ex => ({
-      name: `${ex.name} (${ex.muscleGroup})`,
-      sets: BigInt(parseInt(ex.sets)),
-      repetitions: BigInt(parseInt(ex.repetitions)),
-      setWeights: convertSetWeightsToBigInt(ex.setWeights),
-      restTime: BigInt(parseInt(ex.restTimes[0] || '60')),
-    }));
-
     try {
+      const backendExercises: Exercise[] = exercises.map(ex => {
+        const setWeightsBigInt = convertSetWeightsToBigInt(ex.setWeights);
+        const restTimesBigInt = convertRestTimesToBigInt(ex.restTimes);
+        const avgRestTime = restTimesBigInt.length > 0 
+          ? restTimesBigInt.reduce((sum, val) => sum + val, BigInt(0)) / BigInt(restTimesBigInt.length)
+          : BigInt(60);
+
+        return {
+          name: `${ex.name.trim()} (${ex.muscleGroup.trim()})`,
+          sets: BigInt(ex.sets),
+          repetitions: BigInt(ex.repetitions),
+          setWeights: setWeightsBigInt,
+          restTime: avgRestTime,
+        };
+      });
+
       if (mode === 'edit' && existingWorkout) {
+        const workoutId = `${existingWorkout.clientUsername}_${existingWorkout.name}`;
         await updateWorkoutMutation.mutateAsync({
-          clientUsername,
-          workoutName: existingWorkout.name,
+          workoutId,
           exercises: backendExercises,
           comments: comments.trim(),
+          clientUsername,
         });
       } else if (mode === 'client') {
         await createOwnWorkoutMutation.mutateAsync({
-          clientUsername,
           name: workoutName.trim(),
           exercises: backendExercises,
           comments: comments.trim(),
+          clientUsername,
         });
       } else {
-        await createWorkoutMutation.mutateAsync({
+        await createClientWorkoutMutation.mutateAsync({
           clientUsername,
           name: workoutName.trim(),
           exercises: backendExercises,
           comments: comments.trim(),
         });
       }
+
       onSuccess();
     } catch (err: any) {
       setError(err?.message || 'Failed to save workout. Please try again.');
     }
   };
 
-  const isLoading = createWorkoutMutation.isPending || createOwnWorkoutMutation.isPending || updateWorkoutMutation.isPending;
+  const isPending = createClientWorkoutMutation.isPending || createOwnWorkoutMutation.isPending || updateWorkoutMutation.isPending;
 
   return (
     <div className="space-y-6">
-      {/* Workout Details */}
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="workoutName">Workout Name *</Label>
-          <Input
-            id="workoutName"
-            type="text"
-            value={workoutName}
-            onChange={(e) => setWorkoutName(e.target.value)}
-            placeholder="e.g., Upper Body Strength"
-            disabled={isLoading || mode === 'edit'}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="comments">Notes / Instructions</Label>
-          <Textarea
-            id="comments"
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            placeholder="Add any notes or instructions for this workout..."
-            disabled={isLoading}
-            rows={3}
-          />
-        </div>
+      {/* Workout Name */}
+      <div className="space-y-2">
+        <Label htmlFor="workoutName">Workout Name</Label>
+        <Input
+          id="workoutName"
+          value={workoutName}
+          onChange={(e) => setWorkoutName(e.target.value)}
+          placeholder="e.g., Upper Body Strength"
+          disabled={isPending || mode === 'edit'}
+        />
       </div>
 
       {/* Exercises */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label>Exercises *</Label>
+          <Label className="text-base">Exercises</Label>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={handleAddExercise}
-            disabled={isLoading}
+            disabled={isPending}
             className="gap-2"
           >
             <Plus className="h-4 w-4" />
@@ -241,145 +235,135 @@ export default function WorkoutBuilder({ clientUsername, onSuccess, mode = 'trai
           </Button>
         </div>
 
-        <div className="space-y-3">
-          {exercises.map((exercise, index) => {
-            const setCount = parseInt(exercise.sets) || 0;
-            
-            return (
-              <Card key={index} className="border-border/50 bg-muted/30">
-                <CardContent className="pt-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">Exercise {index + 1}</p>
-                      {exercises.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveExercise(index)}
-                          disabled={isLoading}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+        {exercises.map((exercise, exerciseIndex) => {
+          const setCount = parseInt(exercise.sets) || 0;
+          
+          return (
+            <Card key={exerciseIndex} className="border-border/50 bg-muted/30">
+              <CardContent className="space-y-4 pt-6">
+                <div className="flex items-start justify-between">
+                  <h4 className="font-semibold">Exercise {exerciseIndex + 1}</h4>
+                  {exercises.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveExercise(exerciseIndex)}
+                      disabled={isPending}
+                      className="gap-2 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <Label htmlFor={`exercise-name-${index}`} className="text-xs">Exercise Name *</Label>
-                        <Input
-                          id={`exercise-name-${index}`}
-                          type="text"
-                          value={exercise.name}
-                          onChange={(e) => handleExerciseChange(index, 'name', e.target.value)}
-                          placeholder="e.g., Bench Press"
-                          disabled={isLoading}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`exercise-muscle-${index}`} className="text-xs">Muscle Group *</Label>
-                        <Input
-                          id={`exercise-muscle-${index}`}
-                          type="text"
-                          value={exercise.muscleGroup}
-                          onChange={(e) => handleExerciseChange(index, 'muscleGroup', e.target.value)}
-                          placeholder="e.g., Chest"
-                          disabled={isLoading}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <Label htmlFor={`exercise-sets-${index}`} className="text-xs">Sets *</Label>
-                        <Input
-                          id={`exercise-sets-${index}`}
-                          type="number"
-                          value={exercise.sets}
-                          onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)}
-                          placeholder="3"
-                          disabled={isLoading}
-                          min="1"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`exercise-reps-${index}`} className="text-xs">Reps *</Label>
-                        <Input
-                          id={`exercise-reps-${index}`}
-                          type="number"
-                          value={exercise.repetitions}
-                          onChange={(e) => handleExerciseChange(index, 'repetitions', e.target.value)}
-                          placeholder="10"
-                          disabled={isLoading}
-                          min="1"
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Per-Set Weight Inputs */}
-                    {setCount > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-xs">Target Weight per Set (kg) *</Label>
-                        <div className="grid gap-2 sm:grid-cols-3">
-                          {Array.from({ length: setCount }).map((_, setIdx) => (
-                            <div key={setIdx}>
-                              <Label htmlFor={`exercise-${index}-set-${setIdx}`} className="text-xs text-muted-foreground">
-                                Set {setIdx + 1}
-                              </Label>
-                              <Input
-                                id={`exercise-${index}-set-${setIdx}`}
-                                type="number"
-                                value={exercise.setWeights[setIdx] || ''}
-                                onChange={(e) => handleSetWeightChange(index, setIdx, e.target.value)}
-                                placeholder="kg"
-                                disabled={isLoading}
-                                min="0"
-                                step="0.5"
-                                className="mt-1"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Per-Set Rest Time Inputs */}
-                    {setCount > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-xs">Rest Time per Set (seconds) *</Label>
-                        <div className="grid gap-2 sm:grid-cols-3">
-                          {Array.from({ length: setCount }).map((_, setIdx) => (
-                            <div key={setIdx}>
-                              <Label htmlFor={`exercise-${index}-rest-${setIdx}`} className="text-xs text-muted-foreground">
-                                Set {setIdx + 1}
-                              </Label>
-                              <Input
-                                id={`exercise-${index}-rest-${setIdx}`}
-                                type="number"
-                                value={exercise.restTimes[setIdx] || ''}
-                                onChange={(e) => handleRestTimeChange(index, setIdx, e.target.value)}
-                                placeholder="60"
-                                disabled={isLoading}
-                                min="0"
-                                step="1"
-                                className="mt-1"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor={`exercise-name-${exerciseIndex}`}>Exercise Name</Label>
+                    <Input
+                      id={`exercise-name-${exerciseIndex}`}
+                      value={exercise.name}
+                      onChange={(e) => handleExerciseChange(exerciseIndex, 'name', e.target.value)}
+                      placeholder="e.g., Bench Press"
+                      disabled={isPending}
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`muscle-group-${exerciseIndex}`}>Muscle Group</Label>
+                    <Input
+                      id={`muscle-group-${exerciseIndex}`}
+                      value={exercise.muscleGroup}
+                      onChange={(e) => handleExerciseChange(exerciseIndex, 'muscleGroup', e.target.value)}
+                      placeholder="e.g., Chest"
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`sets-${exerciseIndex}`}>Sets</Label>
+                    <Input
+                      id={`sets-${exerciseIndex}`}
+                      type="number"
+                      value={exercise.sets}
+                      onChange={(e) => handleExerciseChange(exerciseIndex, 'sets', e.target.value)}
+                      placeholder="e.g., 3"
+                      min="1"
+                      disabled={isPending}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`reps-${exerciseIndex}`}>Repetitions</Label>
+                    <Input
+                      id={`reps-${exerciseIndex}`}
+                      type="number"
+                      value={exercise.repetitions}
+                      onChange={(e) => handleExerciseChange(exerciseIndex, 'repetitions', e.target.value)}
+                      placeholder="e.g., 10"
+                      min="1"
+                      disabled={isPending}
+                    />
+                  </div>
+                </div>
+
+                {setCount > 0 && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Target Weight per Set (kg)</Label>
+                      <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4">
+                        {Array.from({ length: setCount }).map((_, setIndex) => (
+                          <Input
+                            key={setIndex}
+                            type="number"
+                            value={exercise.setWeights[setIndex] || ''}
+                            onChange={(e) => handleSetWeightChange(exerciseIndex, setIndex, e.target.value)}
+                            placeholder={`Set ${setIndex + 1}`}
+                            min="0"
+                            step="0.5"
+                            disabled={isPending}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Rest Time per Set (seconds)</Label>
+                      <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4">
+                        {Array.from({ length: setCount }).map((_, setIndex) => (
+                          <Input
+                            key={setIndex}
+                            type="number"
+                            value={exercise.restTimes[setIndex] || ''}
+                            onChange={(e) => handleRestTimeChange(exerciseIndex, setIndex, e.target.value)}
+                            placeholder={`Set ${setIndex + 1}`}
+                            min="0"
+                            step="5"
+                            disabled={isPending}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Comments */}
+      <div className="space-y-2">
+        <Label htmlFor="comments">Comments / Notes (optional)</Label>
+        <Textarea
+          id="comments"
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+          placeholder="Add any additional notes or instructions..."
+          rows={3}
+          disabled={isPending}
+        />
       </div>
 
       {/* Error Display */}
@@ -393,16 +377,16 @@ export default function WorkoutBuilder({ clientUsername, onSuccess, mode = 'trai
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={isLoading}
+        disabled={isPending}
         className="w-full"
       >
-        {isLoading ? (
+        {isPending ? (
           <>
-            <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-            {mode === 'edit' ? 'Saving Changes...' : 'Creating Workout...'}
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+            {mode === 'edit' ? 'Updating...' : 'Creating...'}
           </>
         ) : (
-          mode === 'edit' ? 'Save Changes' : 'Create Workout'
+          <>{mode === 'edit' ? 'Update Workout' : 'Create Workout'}</>
         )}
       </Button>
     </div>

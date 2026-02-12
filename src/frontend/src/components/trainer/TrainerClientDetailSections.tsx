@@ -49,7 +49,7 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
     }
 
     try {
-      await setHeightMutation.mutateAsync({ username, height: heightNum });
+      await setHeightMutation.mutateAsync({ username, height: BigInt(Math.round(heightNum)) });
       setHeight('');
     } catch (err: any) {
       setHeightError(err?.message || 'Failed to save height. Please try again.');
@@ -71,7 +71,7 @@ export default function TrainerClientDetailSections({ username }: TrainerClientD
     }
 
     try {
-      await addWeightMutation.mutateAsync({ username, weight: weightNum, date: weightDate });
+      await addWeightMutation.mutateAsync({ username, weight: BigInt(Math.round(weightNum)), date: weightDate });
       setWeight('');
       setWeightDate(new Date().toISOString().split('T')[0]);
     } catch (err: any) {

@@ -1,12 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Make trainer access-code login reliably accept code "12345" and enter the trainer dashboard, with deterministic actor initialization and clearer English UI messaging.
+**Goal:** Update the app’s light theme to use beige-toned backgrounds and black/near-black text with accessible contrast.
 
 **Planned changes:**
-- Fix trainer authentication flow so access code "12345" consistently succeeds and navigates to the trainer dashboard without showing the generic authentication error.
-- Gate login submission on backend actor readiness (disable/block submit until initialized), and show a specific actionable error when the actor/agent is unavailable.
-- Improve error categorization so the UI distinguishes wrong-code vs service-unavailable vs other authorization/authentication errors, using the generic message only as a fallback.
-- Update all trainer login page user-facing copy (labels, placeholders, buttons, loading/helper text) to English.
+- Adjust light-mode CSS theme tokens in `frontend/src/index.css` (`:root`) so main surfaces (`--background`, `--card`, `--popover`, `--sidebar`) render in beige tones instead of pure white.
+- Update light-mode foreground/text tokens (`--foreground`, `--card-foreground`, `--popover-foreground`, `--sidebar-foreground`) to resolve to black/near-black for readable contrast across pages.
+- Align light-mode interactive/accent tokens (`--primary`, `--primary-foreground`, `--secondary`, `--muted`, `--accent`, `--border`, `--input`, `--ring`) to remain consistent and readable on beige backgrounds, while keeping dark theme tokens unchanged unless readability issues appear.
 
-**User-visible outcome:** Trainers can enter access code "12345" and reliably log in to the Personal area; wrong codes show an incorrect-code message, service issues show a service-unavailable message, and the entire login page reads in English.
+**User-visible outcome:** In light mode, pages (including login, dashboard, and client dashboard) display beige backgrounds with clearly readable black/near-black text, with buttons/inputs/borders remaining visually consistent and dark mode unaffected.

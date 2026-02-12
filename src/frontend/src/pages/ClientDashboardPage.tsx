@@ -6,12 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Dumbbell, LogOut, Plus, TrendingUp, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Dumbbell, LogOut, Plus, TrendingUp, Calendar, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useGetClientProgress, useAddWorkoutProgress } from '../hooks/useQueries';
 import AssignedWorkoutsSection from '../components/client/AssignedWorkoutsSection';
 import WorkoutLogsSection from '../components/client/WorkoutLogsSection';
+import AppointmentsSection from '../components/client/AppointmentsSection';
 import WorkoutBuilder from '../components/trainer/WorkoutBuilder';
-import type { WorkoutProgress } from '../backend';
+import WorkoutRunnerScreen from '../components/client/WorkoutRunnerScreen';
+import type { WorkoutProgress, Workout } from '../backend';
 
 interface ClientDashboardPageProps {
   username: string;
@@ -28,6 +30,12 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
   const [comments, setComments] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Workout runner state
+  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
+  
+  // Workout edit state
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
 
   const { data: progressData, isLoading, refetch } = useGetClientProgress(username);
   const addProgressMutation = useAddWorkoutProgress();
@@ -88,6 +96,106 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
       setError(err?.message || 'Errore durante l\'aggiunta del progresso.');
     }
   };
+
+  const handleStartWorkout = (workout: Workout) => {
+    setActiveWorkout(workout);
+  };
+
+  const handleExitRunner = () => {
+    setActiveWorkout(null);
+  };
+
+  const handleEditWorkout = (workout: Workout) => {
+    setEditingWorkout(workout);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingWorkout(null);
+  };
+
+  const handleEditSuccess = () => {
+    setEditingWorkout(null);
+    setSuccess('Workout updated successfully!');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  // If workout runner is active, show only the runner screen
+  if (activeWorkout) {
+    return (
+      <WorkoutRunnerScreen
+        workout={activeWorkout}
+        onExit={handleExitRunner}
+      />
+    );
+  }
+
+  // If editing a workout, show the edit panel
+  if (editingWorkout) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        {/* Header */}
+        <header className="sticky top-0 z-50 border-b border-border/40 bg-card/80 backdrop-blur-sm">
+          <div className="container mx-auto flex h-16 items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent">
+                <Dumbbell className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <span className="text-xl font-bold">Edit Workout</span>
+                <p className="text-xs text-muted-foreground">{editingWorkout.name}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCloseEdit}
+              className="gap-2"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1">
+          <div className="container mx-auto px-4 py-8">
+            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Edit Workout</CardTitle>
+                <CardDescription>
+                  Modify exercises, weights, rest times, and notes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WorkoutBuilder
+                  clientUsername={username}
+                  onSuccess={handleEditSuccess}
+                  mode="edit"
+                  existingWorkout={editingWorkout}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-border/40 bg-card/30 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+            © 2026. Built with love using{' '}
+            <a
+              href="https://caffeine.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground transition-colors hover:text-primary"
+            >
+              caffeine.ai
+            </a>
+          </div>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -187,7 +295,11 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
           <Separator />
 
           {/* Assigned Workouts Section */}
-          <AssignedWorkoutsSection username={username} />
+          <AssignedWorkoutsSection 
+            username={username} 
+            onStartWorkout={handleStartWorkout}
+            onEditWorkout={handleEditWorkout}
+          />
 
           <Separator />
 
@@ -241,6 +353,11 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
 
           {/* Workout Logs Section */}
           <WorkoutLogsSection username={username} />
+
+          <Separator />
+
+          {/* Appointments Section */}
+          <AppointmentsSection username={username} />
 
           <Separator />
 
@@ -379,45 +496,40 @@ export default function ClientDashboardPage({ username, onLogout }: ClientDashbo
                   </div>
                 ) : progressData && progressData.length > 0 ? (
                   <div className="space-y-4">
-                    {[...progressData].reverse().map((progress, index) => (
+                    {progressData.slice().reverse().map((progress, index) => (
                       <div
                         key={index}
-                        className="rounded-lg border border-border/50 bg-card/50 p-4"
+                        className="rounded-lg border border-border/50 bg-background/50 p-4"
                       >
                         <div className="mb-2 flex items-center justify-between">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {progress.date}
-                          </span>
+                          <span className="font-medium">{progress.date}</span>
                         </div>
                         <div className="space-y-2">
-                          {progress.exercises.map((exercise, exIndex) => {
-                            const weight = exercise.setWeights?.[0] ? Number(exercise.setWeights[0]) : 0;
-                            return (
-                              <div key={exIndex} className="flex items-center gap-2">
-                                <span className="font-semibold">{exercise.name}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {exercise.sets.toString()} serie × {exercise.repetitions.toString()} rip
-                                </span>
-                                <span className="text-sm font-medium text-primary">
-                                  {weight} kg
-                                </span>
-                              </div>
-                            );
-                          })}
+                          {progress.exercises.map((exercise, exIndex) => (
+                            <div key={exIndex} className="text-sm">
+                              <span className="font-medium">{exercise.name}</span>
+                              <span className="text-muted-foreground">
+                                {' '}
+                                - {exercise.sets.toString()} serie x{' '}
+                                {exercise.repetitions.toString()} rip
+                                {exercise.setWeights.length > 0 && (
+                                  <> @ {exercise.setWeights[0].toString()}kg</>
+                                )}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                         {progress.comments && (
                           <p className="mt-2 text-sm text-muted-foreground">
-                            Note: {progress.comments}
+                            {progress.comments}
                           </p>
                         )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border/50">
-                    <p className="text-sm text-muted-foreground">
-                      Nessun allenamento registrato. Inizia ad aggiungerne uno!
-                    </p>
+                  <div className="flex h-40 items-center justify-center text-muted-foreground">
+                    Nessun allenamento registrato
                   </div>
                 )}
               </CardContent>
